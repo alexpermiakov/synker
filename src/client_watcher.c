@@ -1,0 +1,91 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/inotify.h>
+#include <linux/limits.h>
+#include <signal.h>
+
+#include "hash_table.h"
+#include "hash_table_utils.h"
+#include "string_utils.h"
+#include "file_operations.h"
+#include "epoll_helper.h"
+#include "inotify_helper.h"
+#include "event_handlers.h"
+#include "client_watcher.h"
+
+void *client_watcher_handler(void *args) {
+  HashTable wd_to_path;
+  HashTable path_to_wd;
+  thread_args_t *thread_args = (thread_args_t *) args;
+
+  char from_url[PATH_MAX];
+  char to_url[PATH_MAX];
+
+  strcpy(from_url, thread_args->from_url);
+  strcpy(to_url, thread_args->to_url);
+
+  int ifd = inotify_init();
+
+  if (ifd < 0) {
+    perror("inotify_init");
+    exit(1);
+  }
+
+  hash_table_init(&wd_to_path);
+  hash_table_init(&path_to_wd);
+  inotify_add_watch_recursively(&wd_to_path, &path_to_wd, ifd, from_url);
+  copy_dir(from_url, to_url);
+
+  hash_table_print(&wd_to_path, print_string);
+  hash_table_print(&path_to_wd, print_int);
+
+  int epoll_fd = epoll_init();
+  epoll_add_fd(epoll_fd, ifd);
+  struct epoll_event events[MAX_EVENTS];
+
+  printf("Copying from %s to %s:\n", from_url, to_url);
+
+  while (1) {
+    int num_events = epoll_wait_for_events(epoll_fd, events, MAX_EVENTS);
+
+    if (num_events < 0) {
+      perror("epoll_wait");
+      exit(1);
+    }
+
+    for (int i = 0; i < num_events; i++) {
+      if (events[i].data.fd == ifd) {
+        char buf[BUFSIZ];
+        ssize_t len = read(ifd, buf, sizeof(buf));
+        char *p = buf;
+
+        while (p < buf + len) {
+          struct inotify_event *event = (struct inotify_event *) p;
+
+          if (event->mask & IN_CREATE) {
+            create_handler(event, from_url, to_url, &wd_to_path, &path_to_wd, ifd);            
+          }
+
+          if (event->mask & IN_MODIFY) {
+            modify_handler(event, from_url, to_url, &wd_to_path);
+          }
+
+          if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
+            remove_handler(event, from_url, to_url, &wd_to_path, &path_to_wd, ifd);
+          }
+          
+          p += sizeof(struct inotify_event) + event->len;
+        }
+      }
+    }
+  }
+
+  hash_table_dispose(&wd_to_path, deallocate_hash_key_values);
+  hash_table_dispose(&path_to_wd, deallocate_hash_key_values);
+  close(ifd);
+  close(epoll_fd);
+
+  return NULL;
+}
