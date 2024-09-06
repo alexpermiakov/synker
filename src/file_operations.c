@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <limits.h>
+#include <linux/limits.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>
