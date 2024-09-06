@@ -20,11 +20,11 @@ void *client_watcher_handler(void *args) {
   HashTable path_to_wd;
   thread_args_t *thread_args = (thread_args_t *) args;
 
-  char from_url[PATH_MAX];
-  char to_url[PATH_MAX];
+  char watched_dir[PATH_MAX];
+  char server_url[PATH_MAX];
 
-  strcpy(from_url, thread_args->from_url);
-  strcpy(to_url, thread_args->to_url);
+  strcpy(watched_dir, thread_args->watched_dir);
+  strcpy(server_url, thread_args->server_url);
 
   int ifd = inotify_init();
 
@@ -35,8 +35,8 @@ void *client_watcher_handler(void *args) {
 
   hash_table_init(&wd_to_path);
   hash_table_init(&path_to_wd);
-  inotify_add_watch_recursively(&wd_to_path, &path_to_wd, ifd, from_url);
-  copy_dir(from_url, to_url);
+  inotify_add_watch_recursively(&wd_to_path, &path_to_wd, ifd, watched_dir);
+  // copy_dir(watched_dir, server_url);
 
   hash_table_print(&wd_to_path, print_string);
   hash_table_print(&path_to_wd, print_int);
@@ -45,7 +45,7 @@ void *client_watcher_handler(void *args) {
   epoll_add_fd(epoll_fd, ifd);
   struct epoll_event events[MAX_EVENTS];
 
-  printf("Copying from %s to %s:\n", from_url, to_url);
+  printf("Copying from %s to %s:\n", watched_dir, server_url);
 
   while (1) {
     int num_events = epoll_wait_for_events(epoll_fd, events, MAX_EVENTS);
@@ -65,15 +65,15 @@ void *client_watcher_handler(void *args) {
           struct inotify_event *event = (struct inotify_event *) p;
 
           if (event->mask & IN_CREATE) {
-            create_handler(event, from_url, to_url, &wd_to_path, &path_to_wd, ifd);            
+            create_handler(event, watched_dir, server_url, &wd_to_path, &path_to_wd, ifd);            
           }
 
           if (event->mask & IN_MODIFY) {
-            modify_handler(event, from_url, to_url, &wd_to_path);
+            modify_handler(event, watched_dir, server_url, &wd_to_path);
           }
 
           if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
-            remove_handler(event, from_url, to_url, &wd_to_path, &path_to_wd, ifd);
+            remove_handler(event, watched_dir, server_url, &wd_to_path, &path_to_wd, ifd);
           }
           
           p += sizeof(struct inotify_event) + event->len;

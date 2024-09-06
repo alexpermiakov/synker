@@ -16,10 +16,10 @@
 // TODO: extract metadata to a struct
 typedef struct {
   int client_fd;
-  int expected_data_size;
+  size_t expected_data_size;
   int file_name_length;
   char *file_name;
-  int total_read;
+  size_t total_read;
   int fd;
   char buffer[BUFSIZ];
 } client_t;
@@ -68,7 +68,7 @@ int handle_client(client_t *client) {
     if (client->expected_data_size == 0 && client->total_read >= sizeof(int)) {
       // assume first 4 bytes is the size of the data
       client->expected_data_size = *(int *) client->buffer;
-      printf("Expecting %d bytes\n", client->expected_data_size);
+      printf("Expecting %lu bytes\n", client->expected_data_size);
     }
 
     if (client->file_name_length == 0 && client->total_read >= sizeof(int) + sizeof(int)) {
@@ -77,7 +77,7 @@ int handle_client(client_t *client) {
       printf("Expecting file name of length %d\n", client->file_name_length);
     }
 
-    int full_metadata_size = sizeof(int) + sizeof(int) + client->file_name_length;
+    size_t full_metadata_size = sizeof(int) + sizeof(int) + client->file_name_length;
 
     if (client->file_name == NULL && client->total_read >= full_metadata_size) {
       client->file_name = malloc(client->file_name_length + 1);
@@ -98,7 +98,7 @@ int handle_client(client_t *client) {
     }
 
     if (client->total_read >= client->expected_data_size) {
-      printf("Received %d bytes: %s\n", client->expected_data_size, client->buffer + sizeof(int));
+      printf("Received %lu bytes: %s\n", client->expected_data_size, client->buffer + sizeof(int));
       client->expected_data_size = 0;
       client->total_read = 0;
 
@@ -115,7 +115,7 @@ int handle_client(client_t *client) {
 
 void *server_handler (void *args) {
   char *url = (char *) args;
-  printf("Server handler %s\n", url);
+  printf("Server, add incomming changes to %s directory\n", url);
 
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (server_fd < 0) {
@@ -143,6 +143,8 @@ void *server_handler (void *args) {
     perror("listen");
     return NULL;
   }
+
+  printf("Server listening on port %d\n", PORT);
 
   int epoll_fd = epoll_create1(0);
   if (epoll_fd < 0) {
@@ -173,7 +175,8 @@ void *server_handler (void *args) {
       // incoming connection
       if (events[i].data.fd == server_fd) {
         while(1) {
-          int client_fd = accept(server_fd, (struct sockaddr *) &address, sizeof(address));
+          socklen_t address_len = sizeof(address);
+          int client_fd = accept(server_fd, (struct sockaddr *) &address, &address_len);
           if (client_fd < 0) {
             break;
           }

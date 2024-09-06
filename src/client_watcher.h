@@ -4,8 +4,8 @@
 #include <linux/limits.h>
 
 typedef struct {
-  char from_url[PATH_MAX];
-  char to_url[PATH_MAX];
+  char watched_dir[PATH_MAX];
+  char server_url[PATH_MAX];
 } thread_args_t;
 
 void *client_watcher_handler(void *args);

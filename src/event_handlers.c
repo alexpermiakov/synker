@@ -10,50 +10,53 @@
 #include "inotify_helper.h"
 
 void create_handler(struct inotify_event *event,
-                    char *from_url,
-                    char *to_url,
+                    char *watched_dir,
+                    char *server_url,
                     HashTable *wd_to_path,
                     HashTable *path_to_wd,
                     int ifd) {
-
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
 
   char *src_full_path = get_src_path(base_path, event->name);
-  char *dst_full_path = get_dst_path(src_full_path, from_url, to_url);
+  char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);
 
-  printf("File %s was created\n", dst_full_path);
+  printf("File url: %s\n", src_full_path);
+  printf("Server url: %s\n", server_url);
 
   if (event->mask & IN_ISDIR) {
     copy_dir(src_full_path, dst_full_path);
     inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_full_path);
   } else {
-    copy_file(src_full_path, dst_full_path);
+    // copy file from this client host to the server (server_url url)
+    char *postfix = get_postfix(src_full_path, watched_dir);
+    copy_file(src_full_path, server_url, postfix);
+    // copy_file(src_full_path, dst_full_path);
   }
 
   free(dst_full_path);
 }
 
 void modify_handler(struct inotify_event *event,
-                    char *from_url,
-                    char *to_url,
+                    char *watched_dir,
+                    char *server_url,
                     HashTable *wd_to_path) {
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
   char *src_full_path = get_src_path(base_path, event->name);
-  char *dst_full_path = get_dst_path(src_full_path, from_url, to_url);
+  char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);
 
   printf("File %s was modified\n", dst_full_path);
 
-  copy_file(src_full_path, dst_full_path);
+  copy_file(src_full_path, dst_full_path, dst_full_path);
   free(dst_full_path);
 }
 
 void remove_handler(struct inotify_event *event,
-                    char *from_url,
-                    char *to_url,
+                    char *watched_dir,
+                    char *server_url,
                     HashTable *wd_to_path,
                     HashTable *path_to_wd,
                     int ifd) {
@@ -61,7 +64,7 @@ void remove_handler(struct inotify_event *event,
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
   char *src_full_path = get_src_path(base_path, event->name);
-  char *dst_full_path = get_dst_path(src_full_path, from_url, to_url);  
+  char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);  
 
   printf("File %s was deleted\n", dst_full_path);
 

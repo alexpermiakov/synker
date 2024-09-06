@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-void copy_file (char *src, char *dst);
+void copy_file (char *src, char *server_url, char *postfix);
 void copy_dir (char *src, char *dst);
 void remove_file (char *path);
 void remove_dir (char *path);

@@ -5,19 +5,19 @@
 #include "hash_table.h"
 
 void create_handler(struct inotify_event *event,
-                    char *from_url,
-                    char *to_url,
+                    char *watched_dir,
+                    char *server_url,
                     HashTable *wd_to_path,
                     HashTable *path_to_wd,
                     int ifd);
 
 void modify_handler(struct inotify_event *event,
-                    char *from_url,
-                    char *to_url,
+                    char *watched_dir,
+                    char *server_url,
                     HashTable *wd_to_path);
 void remove_handler(struct inotify_event *event,
-                    char *from_url,
-                    char *to_url,
+                    char *watched_dir,
+                    char *server_url,
                     HashTable *wd_to_path,
                     HashTable *path_to_wd,
                     int ifd);
