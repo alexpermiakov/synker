@@ -165,7 +165,10 @@ void *server_handler (void *args) {
   client_t *clients[1024];
 
   while (1) {
+    printf("Waiting for events\n");
     int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+    printf("Received %d events\n", num_events);
+    
     if (num_events < 0) {
       perror("epoll_wait");
       return NULL;
