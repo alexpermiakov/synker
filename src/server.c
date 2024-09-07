@@ -11,7 +11,7 @@
 #include "server.h"
 
 #define MAX_EVENTS 10
-#define PORT 5551
+#define PORT 80
 
 // TODO: extract metadata to a struct
 typedef struct {
