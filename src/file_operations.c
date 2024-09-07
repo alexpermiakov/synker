@@ -71,10 +71,7 @@ void copy_file (char *src, char *server_url, char *postfix) {
   server_addr.sin_port = htons(atoi(port));
   server_addr.sin_addr.s_addr = inet_addr(domain_name);
 
-  if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-    perror("connect");
-    exit(1);
-  }
+  connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
   int epoll_fd = epoll_create1(0);
   if (epoll_fd == -1) {
