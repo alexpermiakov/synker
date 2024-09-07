@@ -151,7 +151,7 @@ void copy_file (char *src, char *server_url, char *postfix) {
     total_written += n;
   }
 
-  printf("Sent file name\n");
+  printf("Sent file name, %d bytes\n", total_written);
 
   close(sock);
   close(epoll_fd);
