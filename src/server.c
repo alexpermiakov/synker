@@ -181,6 +181,8 @@ void *server_handler (void *args) {
             break;
           }
 
+          printf("Accepted connection\n");
+
           int flags = fcntl(client_fd, F_GETFL, 0);
           if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) < 0) {
             perror("fcntl");
