@@ -85,7 +85,7 @@ int handle_client(client_t *client) {
         printf("Creating directory %s\n", file_attrs.file_path);
         mkdir(file_attrs.file_path, file_attrs.mode);
       } else {
-        printf("Creating file %s\n", file_attrs.file_path);
+        printf("Creating file %s and with %d mode\n", file_attrs.file_path, file_attrs.mode);
         client->fd = open(file_attrs.file_path, O_CREAT | O_WRONLY, file_attrs.mode);
         if (client->fd < 0) {
           perror("open");

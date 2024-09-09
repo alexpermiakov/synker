@@ -184,6 +184,8 @@ void copy_file (char *src, char *server_url, char *postfix) {
   char buffer[BUFSIZ];
   size_t expected_size = sizeof(file_attrs_t);
 
+  printf("File mode: %d\n", file_attrs.mode);
+
   serialize_file_attrs(&file_attrs, buffer);
 
   if (write_all(sock_fd, buffer, expected_size) != expected_size) {
