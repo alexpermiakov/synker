@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <linux/limits.h>
 
 typedef struct __attribute__((__packed__)) {
   char file_path[PATH_MAX];

@@ -164,9 +164,6 @@ void copy_file (char *src, char *server_url, char *postfix) {
   }
 
   file_attrs_t file_attrs;
-
-  int filename_len = strlen(path);
-  char *filename = path;
   struct stat info;
 
   if (stat(path, &info) == -1) {
@@ -185,8 +182,7 @@ void copy_file (char *src, char *server_url, char *postfix) {
   file_attrs.ctime = info.st_ctime;
 
   char buffer[BUFSIZ];
-  int expected_size = sizeof(file_attrs_t);
-  int total_written = 0;
+  size_t expected_size = sizeof(file_attrs_t);
 
   serialize_file_attrs(&file_attrs, buffer);
 
@@ -196,8 +192,6 @@ void copy_file (char *src, char *server_url, char *postfix) {
     close(epoll_fd);
     exit(1);
   }
-
-  printf("Sent file name, %d bytes\n", total_written);
 
   close(sock_fd);
   close(epoll_fd);

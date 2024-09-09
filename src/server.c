@@ -8,6 +8,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <linux/limits.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #include "server.h"
 #include "file_operations.h"
