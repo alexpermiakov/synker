@@ -69,6 +69,7 @@ int handle_client(client_t *client) {
 
       printf("Received file attributes\n");
       printf("File path: %s\n", file_attrs.file_path);
+      printf("Is dir: %d\n", file_attrs.is_dir);
       printf("Mode: %d\n", file_attrs.mode);
       printf("Size: %lu\n", file_attrs.size);
       printf("Mtime: %lu\n", file_attrs.mtime);
@@ -77,13 +78,12 @@ int handle_client(client_t *client) {
 
       client->file_attrs = file_attrs;
 
-      char *file_path = client->file_attrs.file_path;
-      if (is_dir(file_path)) {
-        printf("Creating directory %s\n", file_path);
-        mkdir(file_path, 0777);
+      if (file_attrs.is_dir) {
+        printf("Creating directory %s\n", file_attrs.file_path);
+        mkdir(file_attrs.file_path, file_attrs.mode);
       } else {
-        printf("Creating file %s\n", file_path);
-        client->fd = open(file_path, O_CREAT | O_WRONLY, 0777);
+        printf("Creating file %s\n", file_attrs.file_path);
+        client->fd = open(file_attrs.file_path, O_CREAT | O_WRONLY, file_attrs.mode);
         if (client->fd < 0) {
           perror("open");
           return -1;
