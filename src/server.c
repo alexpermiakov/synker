@@ -7,8 +7,10 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <linux/limits.h>
 
 #include "server.h"
+#include "file_operations.h"
 
 #define MAX_EVENTS 10
 #define PORT 80
@@ -16,12 +18,10 @@
 // TODO: extract metadata to a struct
 typedef struct {
   int client_fd;
-  size_t expected_data_size;
-  int file_name_length;
-  char *file_name;
-  size_t total_read;
   int fd;
   char buffer[BUFSIZ];
+  size_t total_read;
+  file_attrs_t file_attrs;
 } client_t;
 
 client_t *create_client(int client_fd) {
@@ -32,11 +32,9 @@ client_t *create_client(int client_fd) {
   }
 
   client->client_fd = client_fd;
-  client->expected_data_size = 0;
-  client->file_name_length = 0;
-  client->file_name = NULL;
-  client->total_read = 0;
   client->fd = -1;
+  client->total_read = 0;
+  client->file_attrs = (file_attrs_t) {0};
   memset(client->buffer, 0, BUFSIZ);
 
   return client;
@@ -65,49 +63,33 @@ int handle_client(client_t *client) {
 
     client->total_read += n;
 
-    if (client->expected_data_size == 0 && client->total_read >= sizeof(int)) {
-      // assume first 4 bytes is the size of the data
-      client->expected_data_size = *(int *) client->buffer;
-      printf("Expecting %lu bytes\n", client->expected_data_size);
-    }
+    if (client->total_read >= sizeof(file_attrs_t)) {
+      file_attrs_t file_attrs;
+      deserialize_file_attrs(&file_attrs, client->buffer);
 
-    if (client->file_name_length == 0 && client->total_read >= sizeof(int) + sizeof(int)) {
-      // assume next 4 bytes is the length of the file name
-      client->file_name_length = *(int *) (client->buffer + sizeof(int));
-      printf("Expecting file name of length %d\n", client->file_name_length);
-    }
+      printf("Received file attributes\n");
+      printf("File path: %s\n", file_attrs.file_path);
+      printf("Mode: %d\n", file_attrs.mode);
+      printf("Size: %lu\n", file_attrs.size);
+      printf("Mtime: %lu\n", file_attrs.mtime);
+      printf("Atime: %lu\n", file_attrs.atime);
+      printf("Ctime: %lu\n", file_attrs.ctime);
 
-    size_t full_metadata_size = sizeof(int) + sizeof(int) + client->file_name_length;
+      client->file_attrs = file_attrs;
 
-    if (client->file_name == NULL && client->total_read >= full_metadata_size) {
-      client->file_name = malloc(client->file_name_length + 1);
-      memcpy(client->file_name, client->buffer + sizeof(int) + sizeof(int), client->file_name_length);
-      client->file_name[client->file_name_length] = '\0';
-      printf("Received file name: %s\n", client->file_name);
-
-      client->fd = open(client->file_name, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-      if (client->fd < 0) {
-        perror("open");
-        close(client->client_fd);
-        return -1;
+      char *file_path = client->file_attrs.file_path;
+      if (is_dir(file_path)) {
+        printf("Creating directory %s\n", file_path);
+        mkdir(file_path, 0777);
+      } else {
+        printf("Creating file %s\n", file_path);
+        client->fd = open(file_path, O_CREAT | O_WRONLY, 0777);
+        if (client->fd < 0) {
+          perror("open");
+          return -1;
+        }
       }
-
-      write(client->fd, client->buffer + full_metadata_size, client->total_read - full_metadata_size);
-    } else if (client->file_name != NULL) {
-      write(client->fd, client->buffer, n);
-    }
-
-    if (client->total_read >= client->expected_data_size) {
-      printf("Received %lu bytes: %s\n", client->expected_data_size, client->buffer + sizeof(int));
-      client->expected_data_size = 0;
-      client->total_read = 0;
-
-      // print message and close connection
-      printf("%s\n", client->buffer + sizeof(int));
-      close(client->client_fd);
-
-      return 1;
-    }
+    } 
   }
 
   return 0;

@@ -26,6 +26,41 @@ bool is_dir_exists(char *path) {
   return info.st_mode & S_IFDIR;
 }
 
+void serialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
+  memcpy(buffer, file_attrs->file_path, PATH_MAX);
+  memcpy(buffer + PATH_MAX, &file_attrs->mode, sizeof(uint32_t));
+  memcpy(buffer + PATH_MAX + sizeof(uint32_t), &file_attrs->size, sizeof(uint64_t));
+  memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t), &file_attrs->mtime, sizeof(uint64_t));
+  memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t), &file_attrs->atime, sizeof(uint64_t));
+  memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), &file_attrs->ctime, sizeof(uint64_t));
+}
+
+void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
+  memcpy(file_attrs->file_path, buffer, PATH_MAX);
+  memcpy(&file_attrs->mode, buffer + PATH_MAX, sizeof(uint32_t));
+  memcpy(&file_attrs->size, buffer + PATH_MAX + sizeof(uint32_t), sizeof(uint64_t));
+  memcpy(&file_attrs->mtime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t), sizeof(uint64_t));
+  memcpy(&file_attrs->atime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
+  memcpy(&file_attrs->ctime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
+}
+
+size_t write_all(int fd, char *buffer, size_t size) {
+  size_t total_written = 0;
+
+  while (total_written < size) {
+    int n = write(fd, buffer + total_written, size - total_written);
+
+    if (n == -1) {
+      perror("write");
+      exit(1);
+    }
+
+    total_written += n;
+  }
+
+  return total_written;
+}
+
 void copy_file (char *src, char *server_url, char *postfix) {
   int src_fd = open(src, O_RDONLY);
   
@@ -48,45 +83,45 @@ void copy_file (char *src, char *server_url, char *postfix) {
   printf("Server Port: %s\n", port);
   printf("File Path: %s\n", path);
 
-  int sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock == -1) {
+  int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock_fd == -1) {
     perror("socket");
     exit(1);
   }
 
-  int flags = fcntl(sock, F_GETFL, 0);
+  int flags = fcntl(sock_fd, F_GETFL, 0);
   if (flags == -1) {
     perror("fcntl");
     exit(1);
   }
 
-  if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+  if (fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
     perror("fcntl");
     exit(1);
   }
 
   struct sockaddr_in server_addr;
   memset(&server_addr, 0, sizeof(server_addr));
-  server_addr.sin_family = AF_INET; // IPv4
+  server_addr.sin_family = AF_INET; 
   server_addr.sin_port = htons(atoi(port));
   server_addr.sin_addr.s_addr = inet_addr(domain_name);
 
-  connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));
+  connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
   int epoll_fd = epoll_create1(0);
   if (epoll_fd == -1) {
     perror("epoll_create1");
-    close(sock);
+    close(sock_fd);
     exit(1);
   }
 
   struct epoll_event event;
   event.events = EPOLLOUT | EPOLLERR; // EPOLLOUT: The associated file is available for writing
-  event.data.fd = sock;
+  event.data.fd = sock_fd;
 
-  if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &event) == -1) {
+  if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock_fd, &event) == -1) {
     perror("epoll_ctl");
-    close(sock);
+    close(sock_fd);
     close(epoll_fd);
     exit(1);
   }
@@ -95,31 +130,30 @@ void copy_file (char *src, char *server_url, char *postfix) {
   int n = epoll_wait(epoll_fd, events, MAX_EVENTS, 10000); // 10 seconds to wait
   if (n == -1) {
     perror("epoll_wait");
-    close(sock);
+    close(sock_fd);
     close(epoll_fd);
     exit(1);
   } else if (n == 0) {
     fprintf(stderr, "Timeout\n");
-    close(sock);
+    close(sock_fd);
     close(epoll_fd);
     exit(1);
   }
 
   if (events[0].events & EPOLLERR) {
     fprintf(stderr, "Error or Hangup\n");
-    close(sock);
+    close(sock_fd);
     close(epoll_fd);
     exit(1);
   }
 
   if (events[0].events & EPOLLOUT) {
-    // check if the connection was successful
     int error = 0;
     socklen_t len = sizeof(error);
 
-    if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &len) == -1) {
+    if (getsockopt(sock_fd, SOL_SOCKET, SO_ERROR, &error, &len) == -1) {
       perror("getsockopt");
-      close(sock);
+      close(sock_fd);
       close(epoll_fd);
       exit(1);
     }
@@ -127,33 +161,42 @@ void copy_file (char *src, char *server_url, char *postfix) {
     printf("Connection successful\n");
   }
 
+  file_attrs_t file_attrs;
+
   int filename_len = strlen(path);
   char *filename = path;
-  int expected_size = sizeof(int) + sizeof(int) + filename_len;
+  struct stat info;
+
+  if (stat(path, &info) == -1) {
+    perror("fstat");
+    close(sock_fd);
+    close(epoll_fd);
+    exit(1);
+  }
+
+  strcpy(file_attrs.file_path, path);
+  file_attrs.size = info.st_size;
+  file_attrs.mode = info.st_mode;
+  file_attrs.mtime = info.st_mtime;
+  file_attrs.atime = info.st_atime;
+  file_attrs.ctime = info.st_ctime;
+
   char buffer[BUFSIZ];
-
-  memcpy(buffer, &expected_size, sizeof(int));
-  memcpy(buffer + sizeof(int), &filename_len, sizeof(int));
-  memcpy(buffer + sizeof(int) + sizeof(int), filename, filename_len);
-
+  int expected_size = sizeof(file_attrs_t);
   int total_written = 0;
 
-  while (total_written < expected_size) {
-    int n = write(sock, buffer + total_written, expected_size - total_written);
+  serialize_file_attrs(&file_attrs, buffer);
 
-    if (n == -1) {
-      perror("write");
-      close(sock);
-      close(epoll_fd);
-      exit(1);
-    }
-
-    total_written += n;
+  if (write_all(sock_fd, buffer, expected_size) != expected_size) {
+    fprintf(stderr, "Failed to send file attributes\n");
+    close(sock_fd);
+    close(epoll_fd);
+    exit(1);
   }
 
   printf("Sent file name, %d bytes\n", total_written);
 
-  close(sock);
+  close(sock_fd);
   close(epoll_fd);
 }
 

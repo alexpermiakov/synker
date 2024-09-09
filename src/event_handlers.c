@@ -29,10 +29,8 @@ void create_handler(struct inotify_event *event,
     copy_dir(src_full_path, dst_full_path);
     inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_full_path);
   } else {
-    // copy file from this client host to the server (server_url url)
     char *postfix = get_postfix(src_full_path, watched_dir);
     copy_file(src_full_path, server_url, postfix);
-    // copy_file(src_full_path, dst_full_path);
   }
 
   free(dst_full_path);
