@@ -65,8 +65,13 @@ int handle_client(client_t *client) {
     }
 
     client->total_read += n;
+    size_t metadata_size = sizeof(file_attrs_t);
 
-    if (client->total_read >= sizeof(file_attrs_t)) {
+    if (client->total_read < metadata_size) {
+      continue;
+    }
+
+    if (client->file_attrs.file_path[0] == '\0') {
       file_attrs_t file_attrs;
       deserialize_file_attrs(&file_attrs, client->buffer);
 
@@ -86,12 +91,29 @@ int handle_client(client_t *client) {
       } else {
         printf("Creating file %s and with %d mode\n", file_attrs.file_path, file_attrs.mode & 0777);
         client->fd = open(file_attrs.file_path, O_CREAT | O_WRONLY, file_attrs.mode & 0777);
+        
         if (client->fd < 0) {
           perror("open");
           return -1;
         }
+
+        if (write_all(client->fd, client->buffer + metadata_size, n - metadata_size) == -1) {
+          perror("write_all");
+          return -1;
+        }
       }
-    } 
+    } else {
+      if (write_all(client->fd, client->buffer, n) == -1) {
+        perror("write_all");
+        return -1;
+      }
+
+      if (client->total_read == metadata_size + client->file_attrs.size) {
+        printf("File received\n");
+        close(client->fd);
+        return 1;
+      }
+    }
   }
 
   return 0;
