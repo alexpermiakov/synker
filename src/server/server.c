@@ -169,7 +169,7 @@ void *server (void *args) {
             break;
           }
 
-          if (strcmp(inet_ntoa(address.sin_addr), "136.244.98.188") ||
+          if (strcmp(inet_ntoa(address.sin_addr), "136.244.98.188") &&
               strcmp(inet_ntoa(address.sin_addr), "95.179.200.237")) {
             printf("Rejected connection from %s\n", inet_ntoa(address.sin_addr));
             close(client_fd);
