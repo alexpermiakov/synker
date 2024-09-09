@@ -40,11 +40,11 @@ void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
   memcpy(&file_attrs->ctime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
 }
 
-size_t write_all(int fd, char *buffer, size_t size) {
+ssize_t write_all(int fd, char *buffer, size_t size) {
   size_t total_written = 0;
 
   while (total_written < size) {
-    int n = write(fd, buffer + total_written, size - total_written);
+    ssize_t n = write(fd, buffer + total_written, size - total_written);
 
     if (n == -1) {
       perror("write");
