@@ -166,7 +166,7 @@ void copy_file (char *src, char *server_url, char *postfix) {
   file_attrs_t file_attrs;
   struct stat info;
 
-  if (stat(path, &info) == -1) {
+  if (stat(src, &info) == -1) {
     perror("fstat");
     close(sock_fd);
     close(epoll_fd);
