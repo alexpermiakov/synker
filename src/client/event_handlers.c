@@ -7,10 +7,10 @@
 #include "utils/string_utils.h"
 #include "client/helpers/epoll.h"
 #include "client/helpers/inotify.h"
-#include "client/network_operations/remove_file.h"
-#include "client/network_operations/remove_dir.h"
-#include "client/network_operations/copy_file.h"
-#include "client/network_operations/copy_dir.h"
+#include "client/net_file_ops/remove_file.h"
+#include "client/net_file_ops/remove_dir.h"
+#include "client/net_file_ops/copy_file.h"
+#include "client/net_file_ops/copy_dir.h"
 
 void create_handler(struct inotify_event *event,
                     char *watched_dir,

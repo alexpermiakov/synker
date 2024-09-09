@@ -82,6 +82,7 @@ void copy_file (char *src_full_path, char *dst_full_path) {
 
   struct epoll_event events[MAX_EVENTS];
   int n = epoll_wait(epoll_fd, events, MAX_EVENTS, 10000); // 10 seconds to wait
+  
   if (n == -1) {
     perror("epoll_wait");
     close(sock_fd);
