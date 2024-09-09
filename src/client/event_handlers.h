@@ -2,7 +2,7 @@
 #define EVENT_HANDLERS_H
 
 #include <sys/inotify.h>
-#include "hash_table.h"
+#include "data_structures/hash_table.h"
 
 void create_handler(struct inotify_event *event,
                     char *watched_dir,

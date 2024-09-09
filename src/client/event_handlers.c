@@ -3,11 +3,14 @@
 #include <string.h>
 #include <sys/inotify.h>
 
-#include "hash_table.h"
-#include "network_operations.h"
-#include "string_utils.h"
-#include "event_handlers.h"
-#include "inotify_helper.h"
+#include "data_structures/hash_table.h"
+#include "utils/string_utils.h"
+#include "client/helpers/epoll.h"
+#include "client/helpers/inotify.h"
+#include "client/network_operations/remove_file.h"
+#include "client/network_operations/remove_dir.h"
+#include "client/network_operations/copy_file.h"
+#include "client/network_operations/copy_dir.h"
 
 void create_handler(struct inotify_event *event,
                     char *watched_dir,

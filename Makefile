@@ -3,7 +3,7 @@ CFALGS = -Wall -Wextra -Werror -I./src
 SRCDIR = src
 OBJDIR = obj
 
-SRCS = $(wildcard $(SRCDIR)/*.c)
+SRCS = $(shell find $(SRCDIR) -name "*.c")
 OBJS = $(SRCS:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
 TARGET = synker
@@ -13,7 +13,8 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFALGS) -o $@ $^
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	mkdir -p $(dir $@)
 	$(CC) $(CFALGS) -c -o $@ $<
 
 $(OBJDIR):

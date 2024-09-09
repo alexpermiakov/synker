@@ -2,10 +2,16 @@
   "files.associations": {
     "limits.h": "c",
     "string.h": "c",
-    "network_operations.h": "c",
-    "string_utils.h": "c",
+    "copy_file.h": "c",
+    "utils/string_utils.h": "c",
     "inotify.h": "c",
+    "utils/file_utils.h": "c",
     "file_utils.h": "c",
-    "file_utils.h": "c"
+    "pthread.h": "c",
+    "server.h": "c",
+    "client/client.h": "c",
+    "epoll.h": "c",
+    "hash_table.h": "c",
+    "stdlib.h": "c"
   }
 }

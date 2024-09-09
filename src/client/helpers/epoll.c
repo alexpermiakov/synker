@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "epoll_helper.h"
+#include "epoll.h"
 
 int epoll_init() {
   int epoll_fd = epoll_create1(0);

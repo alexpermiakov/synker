@@ -13,8 +13,7 @@
 #include <dirent.h>
 
 #include "server.h"
-#include "network_operations.h"
-#include "file_utils.h"
+#include "utils/file_utils.h"
 
 #define MAX_EVENTS 10
 #define PORT 80
@@ -98,7 +97,7 @@ int handle_client(client_t *client) {
   return 0;
 }
 
-void *server_handler (void *args) {
+void *server (void *args) {
   char *url = (char *) args;
   printf("Server, add incomming changes to %s directory\n", url);
 

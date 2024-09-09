@@ -1,5 +1,5 @@
-#ifndef CLIENT_WATCHER_H
-#define CLIENT_WATCHER_H
+#ifndef client_H
+#define client_H
 
 #include <linux/limits.h>
 
@@ -8,6 +8,6 @@ typedef struct {
   char server_url[PATH_MAX];
 } thread_args_t;
 
-void *client_watcher_handler(void *args);
+void *client(void *args);
 
 #endif

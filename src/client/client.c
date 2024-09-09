@@ -6,16 +6,15 @@
 #include <linux/limits.h>
 #include <signal.h>
 
-#include "hash_table.h"
-#include "hash_table_utils.h"
-#include "string_utils.h"
-#include "network_operations.h"
-#include "epoll_helper.h"
-#include "inotify_helper.h"
-#include "event_handlers.h"
-#include "client_watcher.h"
+#include "data_structures/hash_table.h"
+#include "utils/hash_table_utils.h"
+#include "utils/string_utils.h"
+#include "client/helpers/epoll.h"
+#include "client/helpers/inotify.h"
+#include "client/event_handlers.h"
+#include "client/client.h"
 
-void *client_watcher_handler(void *args) {
+void *client(void *args) {
   HashTable wd_to_path;
   HashTable path_to_wd;
   thread_args_t *thread_args = (thread_args_t *) args;

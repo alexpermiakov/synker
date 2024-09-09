@@ -12,8 +12,8 @@
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 
-#include "network_operations.h"
-#include "file_utils.h"
+#include "copy_file.h"
+#include "utils/file_utils.h"
 
 #define MAX_EVENTS 1 // We only have one connection to handle
 
@@ -27,6 +27,7 @@ void copy_file (char *src_full_path, char *dst_full_path) {
 
   printf("Full URL: %s\n", dst_full_path);
 
+  // TODO: extract this to a function
   char *domain_name = strtok(dst_full_path, ":");
   char *port = strtok(NULL, "/");
   char *path_without_slash = strtok(NULL, "");
@@ -114,7 +115,8 @@ void copy_file (char *src_full_path, char *dst_full_path) {
 
     printf("Connection successful\n");
   }
-
+  
+  // TODO: extract this to a function
   file_attrs_t file_attrs;
   struct stat info;
 
@@ -146,80 +148,4 @@ void copy_file (char *src_full_path, char *dst_full_path) {
 
   close(sock_fd);
   close(epoll_fd);
-}
-
-void copy_dir (char *src_full_path, char *dst) {
-  if (!is_dir_exists(dst) && mkdir(dst, 0777) == -1) {
-    perror("mkdir");
-    exit(1);
-  }
-
-  DIR *dir = opendir(src_full_path);
-
-  if (dir == NULL) {
-    perror("opendir");
-    exit(1);
-  }
-
-  struct dirent *entry;
-
-  while((entry = readdir(dir)) != NULL) {
-    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-      continue;
-    }
-
-    char src_path[PATH_MAX];
-    char dst_path[PATH_MAX];
-
-    snprintf(src_path, sizeof(src_path), "%s/%s", src_full_path, entry->d_name);
-    snprintf(dst_path, sizeof(dst_path), "%s/%s", dst, entry->d_name);
-
-    if (entry->d_type == DT_DIR) {
-      copy_dir(src_path, dst_path);
-    } else {
-      copy_file(src_path, dst_path);
-    }
-  }
-
-  closedir(dir);
-}
-
-void remove_file(char *path) {
-  if (unlink(path) == -1) {
-    perror("unlink");
-    exit(1);
-  }
-}
-
-void remove_dir(char *path) {
-  DIR *dir = opendir(path);
-
-  if (dir == NULL) {
-    perror("opendir");
-    exit(1);
-  }
-
-  struct dirent *entry;
-
-  while ((entry = readdir(dir)) != NULL) {
-    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-      continue;
-    }
-
-    char full_path[PATH_MAX];
-    snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
-
-    if (entry->d_type == DT_DIR) {
-      remove_dir(full_path);
-    } else {
-      remove_file(full_path);
-    }
-  }
-
-  closedir(dir);
-
-  if (rmdir(path) == -1) {
-    perror("rmdir");
-    exit(1);
-  }
 }

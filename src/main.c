@@ -2,8 +2,8 @@
 #include <string.h>
 #include <pthread.h>
 
-#include "client_watcher.h"
-#include "server.h"
+#include "client/client.h"
+#include "server/server.h"
 
 int main (int argc, char *argv[]) {
   if (argc != 3) {
@@ -15,12 +15,12 @@ int main (int argc, char *argv[]) {
   strcpy(thread_args.watched_dir, argv[1]);
   strcpy(thread_args.server_url, argv[2]);
 
-  pthread_t client_watcher, server;
+  pthread_t client_thread, server_thread;
   
-  pthread_create(&client_watcher, NULL, client_watcher_handler, &thread_args);
-  pthread_create(&server, NULL, server_handler, thread_args.watched_dir);
-  pthread_join(client_watcher, NULL);
-  pthread_join(server, NULL);
+  pthread_create(&client_thread, NULL, client, &thread_args);
+  pthread_create(&server_thread, NULL, server, thread_args.watched_dir);
+  pthread_join(client_thread, NULL);
+  pthread_join(server_thread, NULL);
 
   return 0;
 }

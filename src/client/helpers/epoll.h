@@ -1,5 +1,5 @@
-#ifndef EPOLL_HELPER_H
-#define EPOLL_HELPER_H
+#ifndef epoll_H
+#define epoll_H
 
 #include <sys/epoll.h>
 

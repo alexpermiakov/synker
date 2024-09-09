@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "inotify_helper.h"
-#include "hash_table.h"
-#include "string_utils.h"
+#include "inotify.h"
+#include "data_structures/hash_table.h"
+#include "utils/string_utils.h"
 
 void inotify_add_watch_recursively(HashTable *wd_to_path, HashTable *path_to_wd, int ifd, char *new_path) {
   int wd = inotify_add_watch(ifd, new_path, IN_MODIFY | IN_DELETE | IN_CREATE);
