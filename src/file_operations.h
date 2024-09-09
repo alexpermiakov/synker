@@ -7,7 +7,6 @@
 
 typedef struct __attribute__((__packed__)) {
   char file_path[PATH_MAX];
-  uint8_t is_dir;
   uint32_t mode;
   uint64_t size;
   uint64_t mtime;

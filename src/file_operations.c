@@ -28,22 +28,20 @@ bool is_dir_exists(char *path) {
 
 void serialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
   memcpy(buffer, file_attrs->file_path, PATH_MAX);
-  memcpy(buffer + PATH_MAX, &file_attrs->is_dir, sizeof(uint8_t));
-  memcpy(buffer + PATH_MAX + sizeof(uint8_t), &file_attrs->mode, sizeof(uint32_t));
-  memcpy(buffer + PATH_MAX + sizeof(uint8_t) + sizeof(uint32_t), &file_attrs->size, sizeof(uint64_t));
-  memcpy(buffer + PATH_MAX + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint64_t), &file_attrs->mtime, sizeof(uint64_t));
-  memcpy(buffer + PATH_MAX + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t), &file_attrs->atime, sizeof(uint64_t));
-  memcpy(buffer + PATH_MAX + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), &file_attrs->ctime, sizeof(uint64_t));
+  memcpy(buffer + PATH_MAX, &file_attrs->mode, sizeof(uint32_t));
+  memcpy(buffer + PATH_MAX + sizeof(uint32_t), &file_attrs->size, sizeof(uint64_t));
+  memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t), &file_attrs->mtime, sizeof(uint64_t));
+  memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t), &file_attrs->atime, sizeof(uint64_t));
+  memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), &file_attrs->ctime, sizeof(uint64_t));
 }
 
 void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
   memcpy(file_attrs->file_path, buffer, PATH_MAX);
-  memcpy(&file_attrs->is_dir, buffer + PATH_MAX, sizeof(uint8_t));
-  memcpy(&file_attrs->mode, buffer + PATH_MAX + sizeof(uint8_t), sizeof(uint32_t));
-  memcpy(&file_attrs->size, buffer + PATH_MAX + sizeof(uint8_t) + sizeof(uint32_t), sizeof(uint64_t));
-  memcpy(&file_attrs->mtime, buffer + PATH_MAX + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint64_t), sizeof(uint64_t));
-  memcpy(&file_attrs->atime, buffer + PATH_MAX + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
-  memcpy(&file_attrs->ctime, buffer + PATH_MAX + sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
+  memcpy(&file_attrs->mode, buffer + PATH_MAX, sizeof(uint32_t));
+  memcpy(&file_attrs->size, buffer + PATH_MAX + sizeof(uint32_t), sizeof(uint64_t));
+  memcpy(&file_attrs->mtime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t), sizeof(uint64_t));
+  memcpy(&file_attrs->atime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
+  memcpy(&file_attrs->ctime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
 }
 
 size_t write_all(int fd, char *buffer, size_t size) {
@@ -174,7 +172,6 @@ void copy_file (char *src, char *server_url, char *postfix) {
   }
 
   strcpy(file_attrs.file_path, path);
-  file_attrs.is_dir = S_ISDIR(info.st_mode);
   file_attrs.size = info.st_size;
   file_attrs.mode = info.st_mode;
   file_attrs.mtime = info.st_mtime;
@@ -184,7 +181,7 @@ void copy_file (char *src, char *server_url, char *postfix) {
   char buffer[BUFSIZ];
   size_t expected_size = sizeof(file_attrs_t);
 
-  printf("File mode: %d\n", file_attrs.mode);
+  printf("File type and mode: %d %d\n", file_attrs.mode & S_IFDIR, file_attrs.mode & 0777);
 
   serialize_file_attrs(&file_attrs, buffer);
 
