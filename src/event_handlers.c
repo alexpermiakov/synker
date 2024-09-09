@@ -29,8 +29,8 @@ void create_handler(struct inotify_event *event,
     copy_dir(src_full_path, dst_full_path);
     inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_full_path);
   } else {
-    char *postfix = get_postfix(src_full_path, watched_dir);
-    copy_file(src_full_path, server_url, postfix);
+    char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);
+    copy_file(src_full_path, dst_full_path);
   }
 
   free(dst_full_path);
@@ -48,7 +48,7 @@ void modify_handler(struct inotify_event *event,
 
   printf("File %s was modified\n", dst_full_path);
 
-  copy_file(src_full_path, dst_full_path, dst_full_path);
+  copy_file(src_full_path, dst_full_path);
   free(dst_full_path);
 }
 

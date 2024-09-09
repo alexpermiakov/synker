@@ -17,19 +17,17 @@
 
 #define MAX_EVENTS 1 // We only have one connection to handle
 
-void copy_file (char *src, char *server_url, char *postfix) {
-  int src_fd = open(src, O_RDONLY);
+void copy_file (char *src_full_path, char *dst_full_path) {
+  int src_fd = open(src_full_path, O_RDONLY);
   
   if (src_fd == -1) {
     perror("open");
     exit(1);
   }
 
-  char *full_url = malloc(strlen(server_url) + strlen(postfix) + 1);
-  strcpy(full_url, server_url);
-  strcat(full_url, postfix);
+  printf("Full URL: %s\n", dst_full_path);
 
-  char *domain_name = strtok(full_url, ":");
+  char *domain_name = strtok(dst_full_path, ":");
   char *port = strtok(NULL, "/");
   char *path_without_slash = strtok(NULL, "");
   char path[PATH_MAX];
@@ -120,7 +118,7 @@ void copy_file (char *src, char *server_url, char *postfix) {
   file_attrs_t file_attrs;
   struct stat info;
 
-  if (stat(src, &info) == -1) {
+  if (stat(src_full_path, &info) == -1) {
     perror("fstat");
     close(sock_fd);
     close(epoll_fd);
@@ -137,8 +135,6 @@ void copy_file (char *src, char *server_url, char *postfix) {
   char buffer[BUFSIZ];
   size_t expected_size = sizeof(file_attrs_t);
 
-  printf("File type and mode: %d %d\n", file_attrs.mode & S_IFDIR, file_attrs.mode & 0777);
-
   serialize_file_attrs(&file_attrs, buffer);
 
   if (write_all(sock_fd, buffer, expected_size) != expected_size) {
@@ -152,13 +148,13 @@ void copy_file (char *src, char *server_url, char *postfix) {
   close(epoll_fd);
 }
 
-void copy_dir (char *src, char *dst) {
+void copy_dir (char *src_full_path, char *dst) {
   if (!is_dir_exists(dst) && mkdir(dst, 0777) == -1) {
     perror("mkdir");
     exit(1);
   }
 
-  DIR *dir = opendir(src);
+  DIR *dir = opendir(src_full_path);
 
   if (dir == NULL) {
     perror("opendir");
@@ -175,13 +171,13 @@ void copy_dir (char *src, char *dst) {
     char src_path[PATH_MAX];
     char dst_path[PATH_MAX];
 
-    snprintf(src_path, sizeof(src_path), "%s/%s", src, entry->d_name);
+    snprintf(src_path, sizeof(src_path), "%s/%s", src_full_path, entry->d_name);
     snprintf(dst_path, sizeof(dst_path), "%s/%s", dst, entry->d_name);
 
     if (entry->d_type == DT_DIR) {
       copy_dir(src_path, dst_path);
     } else {
-      copy_file(src_path, dst_path, dst_path);
+      copy_file(src_path, dst_path);
     }
   }
 
