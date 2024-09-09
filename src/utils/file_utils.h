@@ -15,6 +15,7 @@ typedef struct __attribute__((__packed__)) {
   uint64_t ctime;
 } file_attrs_t;
 
+void extract_file_metadata(char *file_path, file_attrs_t *file_attrs);
 void serialize_file_attrs (file_attrs_t *file_attrs, char *buffer);
 void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer);
 size_t write_all(int fd, char *buffer, size_t size);

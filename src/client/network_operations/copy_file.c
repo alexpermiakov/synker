@@ -14,6 +14,7 @@
 
 #include "copy_file.h"
 #include "utils/file_utils.h"
+#include "utils/network.h"
 
 #define MAX_EVENTS 1 // We only have one connection to handle
 
@@ -24,19 +25,6 @@ void copy_file (char *src_full_path, char *dst_full_path) {
     perror("open");
     exit(1);
   }
-
-  printf("Full URL: %s\n", dst_full_path);
-
-  // TODO: extract this to a function
-  char *domain_name = strtok(dst_full_path, ":");
-  char *port = strtok(NULL, "/");
-  char *path_without_slash = strtok(NULL, "");
-  char path[PATH_MAX];
-  snprintf(path, sizeof(path), "/%s", path_without_slash);
-
-  printf("Server name: %s\n", domain_name);
-  printf("Server Port: %s\n", port);
-  printf("File Path: %s\n", path);
 
   int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (sock_fd == -1) {
@@ -55,10 +43,21 @@ void copy_file (char *src_full_path, char *dst_full_path) {
     exit(1);
   }
 
+  char domain_name[256];
+  int port;
+  char path[PATH_MAX];
+  
+  extract_connection_info(dst_full_path, domain_name, &port, path);
+
+  printf("Server name: %s\n", domain_name);
+  printf("Server Port: %d\n", port);
+  printf("File Path: %s\n", path);
+
   struct sockaddr_in server_addr;
+
   memset(&server_addr, 0, sizeof(server_addr));
   server_addr.sin_family = AF_INET; 
-  server_addr.sin_port = htons(atoi(port));
+  server_addr.sin_port = port;
   server_addr.sin_addr.s_addr = inet_addr(domain_name);
 
   connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
@@ -116,28 +115,13 @@ void copy_file (char *src_full_path, char *dst_full_path) {
     printf("Connection successful\n");
   }
   
-  // TODO: extract this to a function
   file_attrs_t file_attrs;
-  struct stat info;
-
-  if (stat(src_full_path, &info) == -1) {
-    perror("fstat");
-    close(sock_fd);
-    close(epoll_fd);
-    exit(1);
-  }
-
-  strcpy(file_attrs.file_path, path);
-  file_attrs.size = info.st_size;
-  file_attrs.mode = info.st_mode;
-  file_attrs.mtime = info.st_mtime;
-  file_attrs.atime = info.st_atime;
-  file_attrs.ctime = info.st_ctime;
-
   char buffer[BUFSIZ];
-  size_t expected_size = sizeof(file_attrs_t);
-
+  
+  extract_file_metadata(src_full_path, &file_attrs);
   serialize_file_attrs(&file_attrs, buffer);
+
+  size_t expected_size = sizeof(file_attrs_t);
 
   if (write_all(sock_fd, buffer, expected_size) != expected_size) {
     fprintf(stderr, "Failed to send file attributes\n");

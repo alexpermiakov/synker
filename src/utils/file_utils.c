@@ -7,6 +7,22 @@
 
 #include "file_utils.h"
 
+void extract_file_metadata(char *file_path, file_attrs_t *file_attrs) {
+  struct stat info;
+
+  if (stat(file_path, &info) == -1) {
+    perror("fstat");
+    exit(1);
+  }
+
+  strcpy(file_attrs->file_path, file_path);
+  file_attrs->size = info.st_size;
+  file_attrs->mode = info.st_mode;
+  file_attrs->mtime = info.st_mtime;
+  file_attrs->atime = info.st_atime;
+  file_attrs->ctime = info.st_ctime;
+}
+
 void serialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
   memcpy(buffer, file_attrs->file_path, PATH_MAX);
   memcpy(buffer + PATH_MAX, &file_attrs->mode, sizeof(uint32_t));

@@ -12,6 +12,8 @@
     "client/client.h": "c",
     "epoll.h": "c",
     "hash_table.h": "c",
-    "stdlib.h": "c"
+    "stdlib.h": "c",
+    "stdio.h": "c",
+    "network.h": "c"
   }
 }
