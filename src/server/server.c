@@ -164,8 +164,16 @@ void *server (void *args) {
         while(1) {
           socklen_t address_len = sizeof(address);
           int client_fd = accept(server_fd, (struct sockaddr *) &address, &address_len);
+
           if (client_fd < 0) {
             break;
+          }
+
+          if (strcmp(inet_ntoa(address.sin_addr), "136.244.98.188") ||
+              strcmp(inet_ntoa(address.sin_addr), "95.179.200.237")) {
+            printf("Rejected connection from %s\n", inet_ntoa(address.sin_addr));
+            close(client_fd);
+            continue;
           }
 
           printf("Accepted connection\n");
