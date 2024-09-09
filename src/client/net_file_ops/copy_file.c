@@ -123,13 +123,23 @@ void copy_file (char *src_full_path, char *dst_full_path) {
   strcpy(file_attrs.file_path, path);
   serialize_file_attrs(&file_attrs, buffer);
 
-  size_t expected_size = sizeof(file_attrs_t);
-
-  if (write_all(sock_fd, buffer, expected_size) != expected_size) {
+  // Send file attributes
+  if (write_all(sock_fd, buffer, sizeof(file_attrs_t)) == -1) {
     fprintf(stderr, "Failed to send file attributes\n");
     close(sock_fd);
     close(epoll_fd);
     exit(1);
+  }
+
+  ssize_t bytes_read;
+
+  while ((bytes_read = read(src_fd, buffer, BUFSIZ)) > 0) {
+    if (write_all(sock_fd, buffer, n) == -1) {
+      fprintf(stderr, "Failed to send file data\n");
+      close(sock_fd);
+      close(epoll_fd);
+      exit(1);
+    }
   }
 
   close(sock_fd);

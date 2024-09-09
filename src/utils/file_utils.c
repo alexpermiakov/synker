@@ -48,7 +48,7 @@ size_t write_all(int fd, char *buffer, size_t size) {
 
     if (n == -1) {
       perror("write");
-      exit(1);
+      return -1;
     }
 
     total_written += n;
