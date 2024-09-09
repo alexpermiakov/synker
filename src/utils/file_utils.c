@@ -15,7 +15,6 @@ void extract_file_metadata(char *file_path, file_attrs_t *file_attrs) {
     exit(1);
   }
 
-  strcpy(file_attrs->file_path, file_path);
   file_attrs->size = info.st_size;
   file_attrs->mode = info.st_mode;
   file_attrs->mtime = info.st_mtime;

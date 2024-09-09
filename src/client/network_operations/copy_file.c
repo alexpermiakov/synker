@@ -119,6 +119,7 @@ void copy_file (char *src_full_path, char *dst_full_path) {
   char buffer[BUFSIZ];
   
   extract_file_metadata(src_full_path, &file_attrs);
+  strcpy(file_attrs.file_path, path);
   serialize_file_attrs(&file_attrs, buffer);
 
   size_t expected_size = sizeof(file_attrs_t);
