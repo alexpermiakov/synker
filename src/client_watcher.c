@@ -9,7 +9,7 @@
 #include "hash_table.h"
 #include "hash_table_utils.h"
 #include "string_utils.h"
-#include "file_operations.h"
+#include "network_operations.h"
 #include "epoll_helper.h"
 #include "inotify_helper.h"
 #include "event_handlers.h"

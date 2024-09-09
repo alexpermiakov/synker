@@ -1,6 +1,11 @@
 {
   "files.associations": {
     "limits.h": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "network_operations.h": "c",
+    "string_utils.h": "c",
+    "inotify.h": "c",
+    "file_utils.h": "c",
+    "file_utils.h": "c"
   }
 }

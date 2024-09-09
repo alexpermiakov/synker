@@ -13,7 +13,8 @@
 #include <dirent.h>
 
 #include "server.h"
-#include "file_operations.h"
+#include "network_operations.h"
+#include "file_utils.h"
 
 #define MAX_EVENTS 10
 #define PORT 80

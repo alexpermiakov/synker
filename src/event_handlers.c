@@ -4,7 +4,7 @@
 #include <sys/inotify.h>
 
 #include "hash_table.h"
-#include "file_operations.h"
+#include "network_operations.h"
 #include "string_utils.h"
 #include "event_handlers.h"
 #include "inotify_helper.h"
