@@ -67,7 +67,7 @@ ssize_t read_file_attrs(client_t *client) {
   size_t metadata_size = sizeof(file_attrs_t);
 
   if (client->total_read < metadata_size) {
-    return;
+    return 0;
   }
 
   file_attrs_t *file_attrs = (file_attrs_t *) malloc(sizeof(file_attrs_t));
@@ -100,6 +100,8 @@ ssize_t read_file_attrs(client_t *client) {
       return -1;
     }
   }
+
+  return 0;
 }
 
 ssize_t read_file_data(client_t *client) {
@@ -133,8 +135,10 @@ ssize_t read_file_data(client_t *client) {
     printf("File received\n\n");
     free(client->file_attrs);
     close(client->fd);
-    return 1;
+    return 0;
   }
+
+  return 0;
 }
 
 int handle_client(client_t *client) {
