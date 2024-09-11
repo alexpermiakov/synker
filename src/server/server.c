@@ -24,7 +24,7 @@ typedef struct {
   int fd;
   char buffer[BUFSIZ];
   size_t total_read;
-  file_attrs_t file_attrs;
+  file_attrs_t *file_attrs;
 } client_t;
 
 client_t *create_client(int client_fd) {
@@ -37,81 +37,115 @@ client_t *create_client(int client_fd) {
   client->client_fd = client_fd;
   client->fd = -1;
   client->total_read = 0;
-  client->file_attrs = (file_attrs_t) {0};
+  client->file_attrs = NULL;
   memset(client->buffer, 0, BUFSIZ);
 
   return client;
 }
 
-int handle_client(client_t *client) {
-  while (1) {
-    int n = read(client->client_fd, client->buffer, BUFSIZ);
-    
-    if (n == 0) {
-      printf("Connection closed\n\n");
+ssize_t read_file_attrs(client_t *client) {
+  int n = read(client->client_fd, client->buffer + client->total_read, BUFSIZ - client->total_read);
+
+  if (n == 0) {
+    printf("Connection closed\n\n");
+    close(client->client_fd);
+    return -1;
+  }
+
+  if (n < 0) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      // no more data to read right now
+      return -1;
+    } else {
+      perror("read");
       close(client->client_fd);
       return -1;
     }
+  }
 
-    if (n < 0) {
-      if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        // no more data to read right now
-        return -1;
-      } else {
-        perror("read");
-        close(client->client_fd);
-        return -1;
-      }
+  client->total_read += n;
+  size_t metadata_size = sizeof(file_attrs_t);
+
+  if (client->total_read < metadata_size) {
+    return;
+  }
+
+  file_attrs_t *file_attrs = (file_attrs_t *) malloc(sizeof(file_attrs_t));
+  deserialize_file_attrs(file_attrs, client->buffer);
+
+  printf("Received file attributes\n");
+  printf("File path: %s\n", file_attrs->file_path);
+  printf("Mode: %d\n", file_attrs->mode);
+  printf("Size: %lu\n", file_attrs->size);
+  printf("Mtime: %lu\n", file_attrs->mtime);
+  printf("Atime: %lu\n", file_attrs->atime);
+  printf("Ctime: %lu\n", file_attrs->ctime);
+
+  client->file_attrs = file_attrs;
+
+  if (file_attrs->mode & S_IFDIR) {
+    printf("Creating directory %s\n", file_attrs->file_path);
+    mkdir(file_attrs->file_path, file_attrs->mode & 0777);
+  } else {
+    printf("Creating file %s and with %d mode\n", file_attrs->file_path, file_attrs->mode & 0777);
+    client->fd = open(file_attrs->file_path, O_CREAT | O_WRONLY, file_attrs->mode & 0777);
+    
+    if (client->fd < 0) {
+      perror("open");
+      return -1;
     }
 
-    client->total_read += n;
-    size_t metadata_size = sizeof(file_attrs_t);
-
-    if (client->total_read < metadata_size) {
-      continue;
+    if (write_all(client->fd, client->buffer + metadata_size, client->total_read - metadata_size) == -1) {
+      perror("write_all");
+      return -1;
     }
+  }
+}
 
-    if (client->file_attrs.file_path[0] == '\0') {
-      file_attrs_t file_attrs;
-      deserialize_file_attrs(&file_attrs, client->buffer);
+ssize_t read_file_data(client_t *client) {
+  int n = read(client->client_fd, client->buffer, BUFSIZ);
 
-      printf("Received file attributes\n");
-      printf("File path: %s\n", file_attrs.file_path);
-      printf("Mode: %d\n", file_attrs.mode);
-      printf("Size: %lu\n", file_attrs.size);
-      printf("Mtime: %lu\n", file_attrs.mtime);
-      printf("Atime: %lu\n", file_attrs.atime);
-      printf("Ctime: %lu\n", file_attrs.ctime);
+  if (n == 0) {
+    printf("Connection closed\n\n");
+    close(client->client_fd);
+    return -1;
+  }
 
-      client->file_attrs = file_attrs;
+  if (n < 0) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      // no more data to read right now
+      return -1;
+    } else {
+      perror("read");
+      close(client->client_fd);
+      return -1;
+    }
+  }
 
-      if (file_attrs.mode & S_IFDIR) {
-        printf("Creating directory %s\n", file_attrs.file_path);
-        mkdir(file_attrs.file_path, file_attrs.mode & 0777);
-      } else {
-        printf("Creating file %s and with %d mode\n", file_attrs.file_path, file_attrs.mode & 0777);
-        client->fd = open(file_attrs.file_path, O_CREAT | O_WRONLY, file_attrs.mode & 0777);
-        
-        if (client->fd < 0) {
-          perror("open");
-          return -1;
-        }
+  client->total_read += n;
+  
+  if (write_all(client->fd, client->buffer, n) == -1) {
+    perror("write_all");
+    return -1;
+  }
 
-        if (write_all(client->fd, client->buffer + metadata_size, n - metadata_size) == -1) {
-          perror("write_all");
-          return -1;
-        }
+  if (client->total_read == sizeof(file_attrs_t) + client->file_attrs->size) {
+    printf("File received\n\n");
+    free(client->file_attrs);
+    close(client->fd);
+    return 1;
+  }
+}
+
+int handle_client(client_t *client) {
+  while (1) {
+    if (client->file_attrs == NULL) {
+      if (read_file_attrs(client) == -1) {
+        return -1;
       }
     } else {
-      if (write_all(client->fd, client->buffer, n) == -1) {
-        perror("write_all");
+      if (read_file_data(client) == -1) {
         return -1;
-      }
-
-      if (client->total_read == metadata_size + client->file_attrs.size) {
-        printf("File received\n\n");
-        close(client->fd);
-        return 1;
       }
     }
   }
