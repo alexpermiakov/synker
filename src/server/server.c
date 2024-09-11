@@ -113,6 +113,9 @@ ssize_t read_file_data(client_t *client) {
     return -1;
   }
 
+  printf("Read %d bytes\n", n);
+  printf("Total read: %s\n", (char*) client->buffer);
+
   if (n < 0) {
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
       // no more data to read right now
