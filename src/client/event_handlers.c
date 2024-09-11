@@ -12,21 +12,14 @@
 #include "client/net_file_ops/copy_file.h"
 #include "client/net_file_ops/copy_dir.h"
 
-void create_handler(struct inotify_event *event,
-                    char *watched_dir,
-                    char *server_url,
-                    HashTable *wd_to_path,
-                    HashTable *path_to_wd,
-                    int ifd) {
+void create_handler(struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {       
+  printf("File %s was created\n", event->name);
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
 
   char *src_full_path = get_src_path(base_path, event->name);
   char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);
-
-  printf("File url: %s\n", src_full_path);
-  printf("Server url: %s\n", server_url);
 
   if (event->mask & IN_ISDIR) {
     copy_dir(src_full_path, dst_full_path);
@@ -39,10 +32,8 @@ void create_handler(struct inotify_event *event,
   free(dst_full_path);
 }
 
-void modify_handler(struct inotify_event *event,
-                    char *watched_dir,
-                    char *server_url,
-                    HashTable *wd_to_path) {
+void modify_handler(struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path) {
+  printf("File %s was changed\n", event->name);
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
@@ -55,12 +46,8 @@ void modify_handler(struct inotify_event *event,
   free(dst_full_path);
 }
 
-void remove_handler(struct inotify_event *event,
-                    char *watched_dir,
-                    char *server_url,
-                    HashTable *wd_to_path,
-                    HashTable *path_to_wd,
-                    int ifd) {
+void remove_handler(struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {
+  printf("File %s was removed\n", event->name);
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
