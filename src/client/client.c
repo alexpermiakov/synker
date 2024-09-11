@@ -37,8 +37,8 @@ void *client(void *args) {
   inotify_add_watch_recursively(&wd_to_path, &path_to_wd, ifd, watched_dir);
   // copy_dir(watched_dir, server_url);
 
-  hash_table_print(&wd_to_path, print_string);
-  hash_table_print(&path_to_wd, print_int);
+  // hash_table_print(&wd_to_path, print_string);
+  // hash_table_print(&path_to_wd, print_int);
 
   int epoll_fd = epoll_init();
   epoll_add_fd(epoll_fd, ifd);
@@ -68,7 +68,7 @@ void *client(void *args) {
           }
 
           if (event->mask & IN_MODIFY) {
-            modify_handler(event, watched_dir, server_url, &wd_to_path);
+            modify_handler(event, watched_dir, server_url, &wd_to_path, &path_to_wd, ifd);
           }
 
           if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
