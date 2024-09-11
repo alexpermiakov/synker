@@ -46,6 +46,9 @@ client_t *create_client(int client_fd) {
 ssize_t read_file_attrs(client_t *client) {
   int n = read(client->client_fd, client->buffer + client->total_read, BUFSIZ - client->total_read);
 
+  printf("read_file_attrs: read %d bytes\n", n);
+  printf("to load: %lu\n", BUFSIZ - client->total_read);
+
   if (n == 0) {
     printf("Connection closed\n\n");
     close(client->client_fd);
@@ -106,6 +109,9 @@ ssize_t read_file_attrs(client_t *client) {
 
 ssize_t read_file_data(client_t *client) {
   int n = read(client->client_fd, client->buffer, BUFSIZ);
+
+  printf("read_file_data: read %d bytes\n", n);
+  printf("to load: %lu\n", BUFSIZ - client->total_read);
 
   if (n == 0) {
     printf("Connection closed\n\n");
