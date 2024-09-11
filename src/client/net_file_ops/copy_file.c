@@ -123,7 +123,7 @@ void copy_file (char *src_full_path, char *dst_full_path) {
   strcpy(file_attrs.file_path, path);
   serialize_file_attrs(&file_attrs, buffer);
 
-  // Send file attributes
+  printf("Send file attributes\n");
   if (write_all(sock_fd, buffer, sizeof(file_attrs_t)) == -1) {
     fprintf(stderr, "Failed to send file attributes\n");
     close(sock_fd);
@@ -131,6 +131,7 @@ void copy_file (char *src_full_path, char *dst_full_path) {
     exit(1);
   }
 
+  printf("Send file data\n");
   ssize_t bytes_read;
 
   while ((bytes_read = read(src_fd, buffer, BUFSIZ)) > 0) {
@@ -141,6 +142,8 @@ void copy_file (char *src_full_path, char *dst_full_path) {
       exit(1);
     }
   }
+
+  printf("File has sended\n\n");
 
   close(sock_fd);
   close(epoll_fd);

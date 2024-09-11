@@ -48,7 +48,7 @@ int handle_client(client_t *client) {
     int n = read(client->client_fd, client->buffer, BUFSIZ);
     
     if (n == 0) {
-      printf("Connection closed\n");
+      printf("Connection closed\n\n");
       close(client->client_fd);
       return -1;
     }
@@ -109,7 +109,7 @@ int handle_client(client_t *client) {
       }
 
       if (client->total_read == metadata_size + client->file_attrs.size) {
-        printf("File received\n");
+        printf("File received\n\n");
         close(client->fd);
         return 1;
       }
@@ -119,10 +119,7 @@ int handle_client(client_t *client) {
   return 0;
 }
 
-void *server (void *args) {
-  char *url = (char *) args;
-  printf("Server, add incomming changes to %s directory\n", url);
-
+void *server () {
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (server_fd < 0) {
     perror("socket");
@@ -171,7 +168,7 @@ void *server (void *args) {
   client_t *clients[1024];
 
   while (1) {
-    printf("Waiting for events\n");
+    printf("Waiting for events\n\n");
     int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
     printf("Received %d events\n", num_events);
     

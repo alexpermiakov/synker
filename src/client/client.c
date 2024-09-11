@@ -44,8 +44,6 @@ void *client(void *args) {
   epoll_add_fd(epoll_fd, ifd);
   struct epoll_event events[MAX_EVENTS];
 
-  printf("Copying from %s to %s:\n", watched_dir, server_url);
-
   while (1) {
     int num_events = epoll_wait_for_events(epoll_fd, events, MAX_EVENTS);
 
