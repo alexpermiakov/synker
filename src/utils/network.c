@@ -38,7 +38,6 @@ int connect_to_server(char *server_url) {
   server_addr.sin_port = htons(port);
   server_addr.sin_addr.s_addr = inet_addr(server_ip);
 
-
   while(1) {
     printf("Connecting to %s:%d...\n", server_ip, port);
     int ret = connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));

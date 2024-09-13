@@ -20,8 +20,12 @@ void *client(void *args) {
   HashTable path_to_wd;
   thread_args_t *thread_args = (thread_args_t *) args;
   char watched_dir[PATH_MAX];
+  char server_url[PATH_MAX];
 
-  int sock_fd = connect_to_server(thread_args->server_url);
+  strcpy(watched_dir, thread_args->watched_dir);
+  strcpy(server_url, thread_args->server_url);
+
+  int sock_fd = connect_to_server(server_url);
   int inotify_fd = inotify_init();
 
   if (inotify_fd < 0) {
@@ -31,7 +35,7 @@ void *client(void *args) {
 
   hash_table_init(&wd_to_path);
   hash_table_init(&path_to_wd);
-  strcpy(watched_dir, thread_args->watched_dir);
+
   inotify_add_watch_recursively(&wd_to_path, &path_to_wd, inotify_fd, watched_dir);
 
   // hash_table_print(&wd_to_path, print_string);
@@ -61,15 +65,15 @@ void *client(void *args) {
           struct inotify_event *event = (struct inotify_event *) p;
 
           if (event->mask & IN_CREATE) {
-            create_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, inotify_fd);            
+            create_handler(sock_fd, event, watched_dir, server_url, &wd_to_path, &path_to_wd, inotify_fd);            
           }
 
           if (event->mask & IN_MODIFY) {
-            modify_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, inotify_fd);
+            modify_handler(sock_fd, event, watched_dir, server_url, &wd_to_path, &path_to_wd, inotify_fd);
           }
 
           if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
-            remove_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, inotify_fd);
+            remove_handler(sock_fd, event, watched_dir, server_url, &wd_to_path, &path_to_wd, inotify_fd);
           }
           
           p += sizeof(struct inotify_event) + event->len;
