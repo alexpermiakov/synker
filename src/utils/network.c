@@ -18,13 +18,7 @@ void extract_connection_info(char *full_path, char *server_ip, int *port, char *
   sprintf(file_path, "/%s", strtok(NULL, ""));
 }
 
-int connect_to_server(char *server_url) {
-  char server_ip[16];
-  int port;
-  char path[PATH_MAX];
-  
-  extract_connection_info(server_url, server_ip, &port, path);
-  
+int connect_to_server(char *server_ip, int port) {
   int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (sock_fd == -1) {
     perror("socket");
@@ -40,16 +34,13 @@ int connect_to_server(char *server_url) {
 
   while(1) {
     printf("Connecting to %s:%d...\n", server_ip, port);
-    int ret = connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
-    if (ret == 0) {
+    if (connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == 0) {
       break;
     }
 
     sleep(3);
   }
-
-  printf("Sock_fd: %d\n", sock_fd);
 
   return sock_fd;
 }

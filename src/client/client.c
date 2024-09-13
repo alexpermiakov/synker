@@ -21,11 +21,16 @@ void *client(void *args) {
   thread_args_t *thread_args = (thread_args_t *) args;
   char watched_dir[PATH_MAX];
   char server_url[PATH_MAX];
+  char server_ip[16];
+  int port;
+  char dst_to_dir_path[PATH_MAX];
 
   strcpy(watched_dir, thread_args->watched_dir);
   strcpy(server_url, thread_args->server_url);
+  
+  extract_connection_info(server_url, server_ip, &port, dst_to_dir_path);
 
-  int sock_fd = connect_to_server(server_url);
+  int sock_fd = connect_to_server(server_ip, port);
   int inotify_fd = inotify_init();
 
   if (inotify_fd < 0) {
@@ -65,15 +70,15 @@ void *client(void *args) {
           struct inotify_event *event = (struct inotify_event *) p;
 
           if (event->mask & IN_CREATE) {
-            create_handler(sock_fd, event, watched_dir, server_url, &wd_to_path, &path_to_wd, inotify_fd);            
+            create_handler(sock_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);            
           }
 
           if (event->mask & IN_MODIFY) {
-            modify_handler(sock_fd, event, watched_dir, server_url, &wd_to_path, &path_to_wd, inotify_fd);
+            modify_handler(sock_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
           }
 
           if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
-            remove_handler(sock_fd, event, watched_dir, server_url, &wd_to_path, &path_to_wd, inotify_fd);
+            remove_handler(sock_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
           }
           
           p += sizeof(struct inotify_event) + event->len;

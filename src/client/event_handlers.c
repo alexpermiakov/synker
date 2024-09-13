@@ -12,12 +12,12 @@
 #include "client/net_file_ops/copy_file.h"
 #include "client/net_file_ops/copy_dir.h"
 
-void create_handler(int sock_fd, struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {       
+void create_handler(int sock_fd, struct inotify_event *event, char *watched_dir, char *dst_to_dir_path, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {       
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
   char *src_file_path = get_src_path(base_path, event->name);
-  char *dst_file_path = get_dst_path(src_file_path, watched_dir, server_url);
+  char *dst_file_path = get_dst_path(src_file_path, watched_dir, dst_to_dir_path);
 
   printf("File %s was created\n", event->name);
 
@@ -31,12 +31,12 @@ void create_handler(int sock_fd, struct inotify_event *event, char *watched_dir,
   free(dst_file_path);
 }
 
-void modify_handler(int sock_fd, struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {
+void modify_handler(int sock_fd, struct inotify_event *event, char *watched_dir, char *dst_to_dir_path, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
   char *src_file_path = get_src_path(base_path, event->name);
-  char *dst_file_path = get_dst_path(src_file_path, watched_dir, server_url);
+  char *dst_file_path = get_dst_path(src_file_path, watched_dir, dst_to_dir_path);
 
   printf("File %s was changed\n", event->name);
 
@@ -50,13 +50,13 @@ void modify_handler(int sock_fd, struct inotify_event *event, char *watched_dir,
   free(dst_file_path);
 }
 
-void remove_handler(int sock_fd, struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {
+void remove_handler(int sock_fd, struct inotify_event *event, char *watched_dir, char *dst_to_dir_path, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
 
   char *src_file_path = get_src_path(base_path, event->name);
-  char *dst_file_path = get_dst_path(src_file_path, watched_dir, server_url);
+  char *dst_file_path = get_dst_path(src_file_path, watched_dir, dst_to_dir_path);
 
   if (event->mask & IN_ISDIR) {
     copy_dir(sock_fd, src_file_path, dst_file_path);
