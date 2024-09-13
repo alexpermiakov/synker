@@ -14,6 +14,8 @@
     "hash_table.h": "c",
     "stdlib.h": "c",
     "stdio.h": "c",
-    "network.h": "c"
+    "network.h": "c",
+    "socket.h": "c",
+    "stdint.h": "c"
   }
 }

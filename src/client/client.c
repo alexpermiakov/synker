@@ -9,6 +9,7 @@
 #include "data_structures/hash_table.h"
 #include "utils/hash_table_utils.h"
 #include "utils/string_utils.h"
+#include "utils/network.h"
 #include "client/helpers/epoll.h"
 #include "client/helpers/inotify.h"
 #include "client/event_handlers.h"
@@ -18,13 +19,9 @@ void *client(void *args) {
   HashTable wd_to_path;
   HashTable path_to_wd;
   thread_args_t *thread_args = (thread_args_t *) args;
-
   char watched_dir[PATH_MAX];
-  char server_url[PATH_MAX];
 
-  strcpy(watched_dir, thread_args->watched_dir);
-  strcpy(server_url, thread_args->server_url);
-
+  int sock_fd = connect_to_server(thread_args->server_url);
   int ifd = inotify_init();
 
   if (ifd < 0) {
@@ -34,8 +31,8 @@ void *client(void *args) {
 
   hash_table_init(&wd_to_path);
   hash_table_init(&path_to_wd);
+  strcpy(watched_dir, thread_args->watched_dir);
   inotify_add_watch_recursively(&wd_to_path, &path_to_wd, ifd, watched_dir);
-  // copy_dir(watched_dir, server_url);
 
   // hash_table_print(&wd_to_path, print_string);
   // hash_table_print(&path_to_wd, print_int);
@@ -62,15 +59,15 @@ void *client(void *args) {
           struct inotify_event *event = (struct inotify_event *) p;
 
           if (event->mask & IN_CREATE) {
-            create_handler(event, watched_dir, server_url, &wd_to_path, &path_to_wd, ifd);            
+            create_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, ifd);            
           }
 
           if (event->mask & IN_MODIFY) {
-            modify_handler(event, watched_dir, server_url, &wd_to_path, &path_to_wd, ifd);
+            modify_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, ifd);
           }
 
           if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
-            remove_handler(event, watched_dir, server_url, &wd_to_path, &path_to_wd, ifd);
+            remove_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, ifd);
           }
           
           p += sizeof(struct inotify_event) + event->len;

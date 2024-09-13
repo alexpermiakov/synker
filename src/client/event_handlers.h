@@ -4,8 +4,8 @@
 #include <sys/inotify.h>
 #include "data_structures/hash_table.h"
 
-void create_handler(struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int ifd);
-void modify_handler(struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int ifd);
-void remove_handler(struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int ifd);
+void create_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int ifd);
+void modify_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int ifd);
+void remove_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int ifd);
 
 #endif

@@ -4,8 +4,24 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <fcntl.h>
 
 #include "file_utils.h"
+
+int set_non_blocking(int fd) {
+  int flags = fcntl(fd, F_GETFL, 0);
+  if (flags == -1) {
+    perror("fcntl");
+    return -1;
+  }
+
+  if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+    perror("fcntl");
+    return -1;
+  }
+
+  return 0;
+}
 
 void extract_file_metadata(char *file_path, file_attrs_t *file_attrs) {
   struct stat info;

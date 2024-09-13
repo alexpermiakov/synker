@@ -11,13 +11,13 @@
 #include "remove_dir.h"
 #include "remove_file.h"
 
-void copy_dir (char *src_full_path, char *dst) {
-  if (!is_dir_exists(dst) && mkdir(dst, 0777) == -1) {
+void copy_dir (int sock_fd, char *src_file_path, char *dst_file_path) {
+  if (!is_dir_exists(dst_file_path) && mkdir(dst_file_path, 0777) == -1) {
     perror("mkdir");
     exit(1);
   }
 
-  DIR *dir = opendir(src_full_path);
+  DIR *dir = opendir(src_file_path);
 
   if (dir == NULL) {
     perror("opendir");
@@ -32,15 +32,15 @@ void copy_dir (char *src_full_path, char *dst) {
     }
 
     char src_path[PATH_MAX];
-    char dst_path[PATH_MAX];
+    char sub_dst_file_path[PATH_MAX];
 
-    snprintf(src_path, sizeof(src_path), "%s/%s", src_full_path, entry->d_name);
-    snprintf(dst_path, sizeof(dst_path), "%s/%s", dst, entry->d_name);
+    snprintf(src_path, sizeof(src_path), "%s/%s", src_file_path, entry->d_name);
+    snprintf(sub_dst_file_path, sizeof(sub_dst_file_path), "%s/%s", dst_file_path, entry->d_name);
 
     if (entry->d_type == DT_DIR) {
-      copy_dir(src_path, dst_path);
+      copy_dir(sock_fd, src_path, sub_dst_file_path);
     } else {
-      copy_file(src_path, dst_path);
+      copy_file(sock_fd, src_path, sub_dst_file_path);
     }
   }
 

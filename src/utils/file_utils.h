@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+int set_non_blocking(int fd);
+
 typedef struct __attribute__((__packed__)) {
   char file_path[PATH_MAX];
   uint32_t mode;

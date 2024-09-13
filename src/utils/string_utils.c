@@ -23,8 +23,8 @@ char *get_src_path(char *base_path, char *filename) {
 
 char *get_dst_path(char *src, char *src_prefix, char *dst_prefix) {
   char *postfix = get_postfix(src, src_prefix);
-  char *dst_full_path = malloc(PATH_MAX);
-  snprintf(dst_full_path, PATH_MAX, "%s%s", dst_prefix, postfix);
+  char *dst_file_path = malloc(PATH_MAX);
+  snprintf(dst_file_path, PATH_MAX, "%s%s", dst_prefix, postfix);
 
-  return dst_full_path;
+  return dst_file_path;
 }

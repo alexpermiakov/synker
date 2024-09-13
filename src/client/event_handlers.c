@@ -12,60 +12,58 @@
 #include "client/net_file_ops/copy_file.h"
 #include "client/net_file_ops/copy_dir.h"
 
-void create_handler(struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {       
+void create_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {       
+  char *key = malloc(20);
+  sprintf(key, "%d", event->wd);
+  char *base_path = hash_table_get(wd_to_path, key);
+  char *src_file_path = get_src_path(base_path, event->name);
+  char *dst_file_path = get_postfix(src_file_path, watched_dir);
+
   printf("File %s was created\n", event->name);
+
+  if (event->mask & IN_ISDIR) {
+    copy_dir(sock_fd, src_file_path, dst_file_path);
+    inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_file_path);
+  } else {
+    copy_file(sock_fd, src_file_path, dst_file_path);
+  }
+
+  free(dst_file_path);
+}
+
+void modify_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
+  char *src_file_path = get_src_path(base_path, event->name);
+  char *dst_file_path = get_postfix(src_file_path, watched_dir);
 
-  char *src_full_path = get_src_path(base_path, event->name);
-  char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);
-
-  if (event->mask & IN_ISDIR) {
-    copy_dir(src_full_path, dst_full_path);
-    inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_full_path);
-  } else {
-    char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);
-    copy_file(src_full_path, dst_full_path);
-  }
-
-  free(dst_full_path);
-}
-
-void modify_handler(struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {
   printf("File %s was changed\n", event->name);
-  char *key = malloc(20);
-  sprintf(key, "%d", event->wd);
-  char *base_path = hash_table_get(wd_to_path, key);
-
-  char *src_full_path = get_src_path(base_path, event->name);
-  char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);
 
   if (event->mask & IN_ISDIR) {
-    copy_dir(src_full_path, dst_full_path);
-    inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_full_path);
+    copy_dir(sock_fd, src_file_path, dst_file_path);
+    inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_file_path);
   } else {
-    char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);
-    copy_file(src_full_path, dst_full_path);
+    copy_file(sock_fd, src_file_path, dst_file_path);
   }
 
-  free(dst_full_path);
+  free(dst_file_path);
 }
 
-void remove_handler(struct inotify_event *event, char *watched_dir, char *server_url, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {
-  printf("File %s was removed\n", event->name);
+void remove_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
-  char *src_full_path = get_src_path(base_path, event->name);
-  char *dst_full_path = get_dst_path(src_full_path, watched_dir, server_url);  
+
+  char *src_file_path = get_src_path(base_path, event->name);
+  char *dst_file_path = get_postfix(src_file_path, watched_dir);
 
   if (event->mask & IN_ISDIR) {
-    inotify_remove_watch_recursively(path_to_wd, ifd, src_full_path);
-    remove_dir(dst_full_path);
+    copy_dir(sock_fd, src_file_path, dst_file_path);
+    inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_file_path);
   } else {
-    remove_file(dst_full_path);
+    copy_file(sock_fd, src_file_path, dst_file_path);
   }
 
-  free(dst_full_path);
+  free(dst_file_path);
 }

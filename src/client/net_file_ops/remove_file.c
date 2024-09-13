@@ -1,12 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/epoll.h>
+#include <linux/limits.h>
 
 #include "remove_file.h"
 
-void remove_file(char *path) {
-  if (unlink(path) == -1) {
-    perror("unlink");
+void remove_file(int sock_fd, char *dst_file_path) {
+  if(write(sock_fd, dst_file_path, strlen(dst_file_path) + 1) == -1) {
+    perror("write");
+    close(sock_fd);
     exit(1);
-  }
+  }  
 }
