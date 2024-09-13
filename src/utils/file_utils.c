@@ -60,7 +60,9 @@ ssize_t write_all(int fd, char *buffer, size_t size) {
   size_t total_written = 0;
 
   while (total_written < size) {
+    printf("Trying to write %ld bytes\n", size - total_written);
     ssize_t n = write(fd, buffer + total_written, size - total_written);
+    printf("Written %ld bytes\n", n);
 
     if (n == -1) {
       perror("write");
