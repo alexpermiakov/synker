@@ -135,7 +135,7 @@ void copy_file (char *src_full_path, char *dst_full_path) {
   ssize_t bytes_read;
 
   while ((bytes_read = read(src_fd, buffer, BUFSIZ)) > 0) {
-    if (write_all(sock_fd, buffer, BUFSIZ) == -1) {
+    if (write_all(sock_fd, buffer, bytes_read) == -1) {
       fprintf(stderr, "Failed to send file data\n");
       close(sock_fd);
       close(epoll_fd);
