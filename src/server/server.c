@@ -87,10 +87,10 @@ ssize_t read_file_attrs(client_t *client) {
   client->file_attrs = file_attrs;
 
   if (file_attrs->mode & S_IFDIR) {
-    printf("Creating directory %s\n", file_attrs->file_path);
+    printf("Creating directory %s\n\n", file_attrs->file_path);
     mkdir(file_attrs->file_path, file_attrs->mode & 0777);
   } else {
-    printf("Creating file %s and with %d mode\n", file_attrs->file_path, file_attrs->mode & 0777);
+    printf("Creating file %s and with %d mode\n\n", file_attrs->file_path, file_attrs->mode & 0777);
     client->fd = open(file_attrs->file_path, O_CREAT | O_WRONLY, file_attrs->mode & 0777);
     
     if (client->fd < 0) {
@@ -111,7 +111,6 @@ ssize_t read_file_data(client_t *client) {
   int n = read(client->client_fd, client->buffer, BUFSIZ);
 
   printf("read_file_data: read %d bytes\n", n);
-  printf("to load: %lu\n", BUFSIZ - client->total_read);
 
   if (n == 0) {
     printf("Connection closed\n\n");
