@@ -41,6 +41,7 @@ int connect_to_server(char *server_ip, int port) {
 
     sleep(3);
   }
+  printf("Connected to %s:%d\n", server_ip, port);
 
   return sock_fd;
 }

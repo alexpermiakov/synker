@@ -20,24 +20,21 @@ void copy_file (int sock_fd, char *src_file_path, char *dst_file_path) {
     exit(1);
   }
 
-  char buffer[BUFSIZ];
+  char file_attr_buffer[sizeof(file_attrs_t)];
   file_attrs_t file_attrs;
   ssize_t bytes_read;
 
   extract_file_metadata(src_file_path, &file_attrs);
   strcpy(file_attrs.file_path, dst_file_path);
-  serialize_file_attrs(&file_attrs, buffer);
+  serialize_file_attrs(&file_attrs, file_attr_buffer);
 
-  printf("Send file attributes\n");
-  if (write_all(sock_fd, buffer, sizeof(file_attrs_t)) == -1) {
-    fprintf(stderr, "Failed to send file attributes\n");
-    close(sock_fd);
-    exit(1);
-  }
+  char file_data_buffer[BUFSIZ];
+  size_t attr_offset = sizeof(file_attr_buffer);
+  memcpy(file_data_buffer, file_attr_buffer, attr_offset);
 
   printf("Send file data\n");
-  while ((bytes_read = read(src_fd, buffer, BUFSIZ)) > 0) {
-    if (write_all(sock_fd, buffer, bytes_read) == -1) {
+  while ((bytes_read = read(src_fd, file_data_buffer + attr_offset, BUFSIZ - attr_offset)) > 0) {
+    if (write_all(sock_fd, file_data_buffer, bytes_read + attr_offset) == -1) {
       fprintf(stderr, "Failed to send file data\n");
       close(sock_fd);
       exit(1);

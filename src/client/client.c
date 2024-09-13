@@ -49,7 +49,6 @@ void *client(void *args) {
   int epoll_fd = epoll_init();
 
   epoll_add_fd(epoll_fd, inotify_fd);
-  // epoll_add_fd(epoll_fd, sock_fd);
   struct epoll_event events[MAX_EVENTS];
 
   while (1) {
