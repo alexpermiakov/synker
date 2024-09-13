@@ -12,7 +12,7 @@
 #include "client/net_file_ops/copy_file.h"
 #include "client/net_file_ops/copy_dir.h"
 
-void create_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {       
+void create_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {       
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
@@ -23,7 +23,7 @@ void create_handler(int sock_fd, struct inotify_event *event, char *watched_dir,
 
   if (event->mask & IN_ISDIR) {
     copy_dir(sock_fd, src_file_path, dst_file_path);
-    inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_file_path);
+    inotify_add_watch_recursively(wd_to_path, path_to_wd, inotify_fd, src_file_path);
   } else {
     copy_file(sock_fd, src_file_path, dst_file_path);
   }
@@ -31,7 +31,7 @@ void create_handler(int sock_fd, struct inotify_event *event, char *watched_dir,
   free(dst_file_path);
 }
 
-void modify_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {
+void modify_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
@@ -42,7 +42,7 @@ void modify_handler(int sock_fd, struct inotify_event *event, char *watched_dir,
 
   if (event->mask & IN_ISDIR) {
     copy_dir(sock_fd, src_file_path, dst_file_path);
-    inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_file_path);
+    inotify_add_watch_recursively(wd_to_path, path_to_wd, inotify_fd, src_file_path);
   } else {
     copy_file(sock_fd, src_file_path, dst_file_path);
   }
@@ -50,7 +50,7 @@ void modify_handler(int sock_fd, struct inotify_event *event, char *watched_dir,
   free(dst_file_path);
 }
 
-void remove_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int ifd) {
+void remove_handler(int sock_fd, struct inotify_event *event, char *watched_dir, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {
   char *key = malloc(20);
   sprintf(key, "%d", event->wd);
   char *base_path = hash_table_get(wd_to_path, key);
@@ -60,7 +60,7 @@ void remove_handler(int sock_fd, struct inotify_event *event, char *watched_dir,
 
   if (event->mask & IN_ISDIR) {
     copy_dir(sock_fd, src_file_path, dst_file_path);
-    inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, src_file_path);
+    inotify_add_watch_recursively(wd_to_path, path_to_wd, inotify_fd, src_file_path);
   } else {
     copy_file(sock_fd, src_file_path, dst_file_path);
   }

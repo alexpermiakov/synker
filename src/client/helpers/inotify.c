@@ -8,8 +8,8 @@
 #include "data_structures/hash_table.h"
 #include "utils/string_utils.h"
 
-void inotify_add_watch_recursively(HashTable *wd_to_path, HashTable *path_to_wd, int ifd, char *new_path) {
-  int wd = inotify_add_watch(ifd, new_path, IN_MODIFY | IN_DELETE | IN_CREATE);
+void inotify_add_watch_recursively(HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd, char *new_path) {
+  int wd = inotify_add_watch(inotify_fd, new_path, IN_MODIFY | IN_DELETE | IN_CREATE);
 
   if (wd < 0) {
     perror("inotify_add_watch");
@@ -39,14 +39,14 @@ void inotify_add_watch_recursively(HashTable *wd_to_path, HashTable *path_to_wd,
       sprintf(key, "%d", wd);
       char *base_path = hash_table_get(wd_to_path, key);
       char *sub_path = get_src_path(base_path, entry->d_name);
-      inotify_add_watch_recursively(wd_to_path, path_to_wd, ifd, sub_path);
+      inotify_add_watch_recursively(wd_to_path, path_to_wd, inotify_fd, sub_path);
     }
   }
   
   closedir(dir);
 }
 
-void inotify_remove_watch_recursively(HashTable *path_to_wd, int ifd, char *new_path) {
+void inotify_remove_watch_recursively(HashTable *path_to_wd, int inotify_fd, char *new_path) {
   int *wd = hash_table_get(path_to_wd, new_path);
-  inotify_rm_watch(ifd, *wd);
+  inotify_rm_watch(inotify_fd, *wd);
 }

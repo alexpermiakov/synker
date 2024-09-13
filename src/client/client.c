@@ -22,9 +22,9 @@ void *client(void *args) {
   char watched_dir[PATH_MAX];
 
   int sock_fd = connect_to_server(thread_args->server_url);
-  int ifd = inotify_init();
+  int inotify_fd = inotify_init();
 
-  if (ifd < 0) {
+  if (inotify_fd < 0) {
     perror("inotify_init");
     exit(1);
   }
@@ -32,13 +32,15 @@ void *client(void *args) {
   hash_table_init(&wd_to_path);
   hash_table_init(&path_to_wd);
   strcpy(watched_dir, thread_args->watched_dir);
-  inotify_add_watch_recursively(&wd_to_path, &path_to_wd, ifd, watched_dir);
+  inotify_add_watch_recursively(&wd_to_path, &path_to_wd, inotify_fd, watched_dir);
 
   // hash_table_print(&wd_to_path, print_string);
   // hash_table_print(&path_to_wd, print_int);
 
   int epoll_fd = epoll_init();
-  epoll_add_fd(epoll_fd, ifd);
+
+  epoll_add_fd(epoll_fd, inotify_fd);
+  // epoll_add_fd(epoll_fd, sock_fd);
   struct epoll_event events[MAX_EVENTS];
 
   while (1) {
@@ -50,24 +52,24 @@ void *client(void *args) {
     }
 
     for (int i = 0; i < num_events; i++) {
-      if (events[i].data.fd == ifd) {
+      if (events[i].data.fd == inotify_fd) {
         char buf[BUFSIZ];
-        ssize_t len = read(ifd, buf, sizeof(buf));
+        ssize_t len = read(inotify_fd, buf, sizeof(buf));
         char *p = buf;
 
         while (p < buf + len) {
           struct inotify_event *event = (struct inotify_event *) p;
 
           if (event->mask & IN_CREATE) {
-            create_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, ifd);            
+            create_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, inotify_fd);            
           }
 
           if (event->mask & IN_MODIFY) {
-            modify_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, ifd);
+            modify_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, inotify_fd);
           }
 
           if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
-            remove_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, ifd);
+            remove_handler(sock_fd, event, watched_dir, &wd_to_path, &path_to_wd, inotify_fd);
           }
           
           p += sizeof(struct inotify_event) + event->len;
@@ -78,7 +80,7 @@ void *client(void *args) {
 
   hash_table_dispose(&wd_to_path, deallocate_hash_key_values);
   hash_table_dispose(&path_to_wd, deallocate_hash_key_values);
-  close(ifd);
+  close(inotify_fd);
   close(epoll_fd);
 
   return NULL;

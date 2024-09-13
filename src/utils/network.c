@@ -38,26 +38,14 @@ int connect_to_server(char *server_url) {
   server_addr.sin_port = htons(port);
   server_addr.sin_addr.s_addr = inet_addr(server_ip);
 
-  connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+  if (connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+    perror("connect");
+    close(sock_fd);
+    exit(1);
+  }
+
+  printf("Sock_fd: %d\n", sock_fd);
+  set_non_blocking(sock_fd);
 
   return sock_fd;
-}
-
-void add_to_epoll(int *epoll_fd, int fd) {
-  if (*epoll_fd == -1) {
-    perror("epoll_create1");
-    close(fd);
-    exit(1);
-  }
-
-  struct epoll_event event;
-  event.events = EPOLLOUT | EPOLLERR; // EPOLLOUT: The associated file is available for writing
-  event.data.fd = fd;
-
-  if (epoll_ctl(*epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1) {
-    perror("epoll_ctl");
-    close(fd);
-    close(*epoll_fd);
-    exit(1);
-  }
 }

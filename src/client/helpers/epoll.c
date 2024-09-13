@@ -15,12 +15,12 @@ int epoll_init() {
   return epoll_fd;
 }
 
-void epoll_add_fd(int epoll_fd, int ifd) {
+void epoll_add_fd(int epoll_fd, int inotify_fd) {
   struct epoll_event event;
   event.events = EPOLLIN;
-  event.data.fd = ifd;
+  event.data.fd = inotify_fd;
 
-  if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, ifd, &event) < 0) {
+  if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, inotify_fd, &event) < 0) {
     perror("epoll_ctl");
     exit(1);
   }
