@@ -76,7 +76,7 @@ size_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
   }
 
   printf("file_attrs->size %lu\n", file_attrs->size);
-  printf("info.st_size %lu\n", file_size);
+  printf("file_size %lu\n", file_size);
 
   if (file_attrs->size == file_size) {
     printf("File received\n\n");
