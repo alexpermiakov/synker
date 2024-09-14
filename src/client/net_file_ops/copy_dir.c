@@ -11,7 +11,7 @@
 #include "remove_dir.h"
 #include "remove_file.h"
 
-void copy_dir (int sock_fd, char *src_file_path, char *dst_file_path) {
+void copy_dir (int client_fd, char *src_file_path, char *dst_file_path) {
   if (!is_dir_exists(dst_file_path) && mkdir(dst_file_path, 0777) == -1) {
     perror("mkdir");
     exit(1);
@@ -38,9 +38,9 @@ void copy_dir (int sock_fd, char *src_file_path, char *dst_file_path) {
     snprintf(sub_dst_file_path, sizeof(sub_dst_file_path), "%s/%s", dst_file_path, entry->d_name);
 
     if (entry->d_type == DT_DIR) {
-      copy_dir(sock_fd, src_path, sub_dst_file_path);
+      copy_dir(client_fd, src_path, sub_dst_file_path);
     } else {
-      copy_file(sock_fd, src_path, sub_dst_file_path);
+      copy_file(client_fd, src_path, sub_dst_file_path);
     }
   }
 

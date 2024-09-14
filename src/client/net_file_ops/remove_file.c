@@ -11,10 +11,10 @@
 
 #include "remove_file.h"
 
-void remove_file(int sock_fd, char *dst_file_path) {
-  if(write(sock_fd, dst_file_path, strlen(dst_file_path) + 1) == -1) {
+void remove_file(int client_fd, char *dst_file_path) {
+  if(write(client_fd, dst_file_path, strlen(dst_file_path) + 1) == -1) {
     perror("write");
-    close(sock_fd);
+    close(client_fd);
     exit(1);
   }  
 }

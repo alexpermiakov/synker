@@ -46,6 +46,7 @@ void serialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
   memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t), &file_attrs->mtime, sizeof(uint64_t));
   memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t), &file_attrs->atime, sizeof(uint64_t));
   memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), &file_attrs->ctime, sizeof(uint64_t));
+  memcpy(buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), &file_attrs->is_last_chunk, sizeof(uint8_t));
 }
 
 void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
@@ -55,22 +56,21 @@ void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
   memcpy(&file_attrs->mtime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t), sizeof(uint64_t));
   memcpy(&file_attrs->atime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
   memcpy(&file_attrs->ctime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
+  memcpy(&file_attrs->is_last_chunk, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint8_t));
 }
 
-ssize_t write_all(int fd, char *buffer, size_t size) {
+ssize_t write_n(int fd, char *buffer, size_t n) {
   size_t total_written = 0;
 
-  while (total_written < size) {
-    printf("Trying to write %ld bytes\n", size - total_written);
-    ssize_t n = write(fd, buffer + total_written, size - total_written);
-    printf("Written %ld bytes\n", n);
+  while (total_written < n) {
+    ssize_t written_amount = write(fd, buffer + total_written, n - total_written);
 
-    if (n == -1) {
+    if (written_amount == -1) {
       perror("write");
       return -1;
     }
 
-    total_written += n;
+    total_written += written_amount;
   }
 
   return total_written;

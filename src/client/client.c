@@ -30,7 +30,7 @@ void *client(void *args) {
   
   extract_connection_info(server_url, server_ip, &port, dst_to_dir_path);
 
-  int sock_fd = connect_to_server(server_ip, port);
+  int client_fd = connect_to_server(server_ip, port);
   int inotify_fd = inotify_init();
 
   if (inotify_fd < 0) {
@@ -69,15 +69,15 @@ void *client(void *args) {
           struct inotify_event *event = (struct inotify_event *) p;
 
           if (event->mask & IN_CREATE) {
-            create_handler(sock_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);            
+            create_handler(client_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);            
           }
 
           if (event->mask & IN_MODIFY) {
-            modify_handler(sock_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
+            modify_handler(client_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
           }
 
           if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
-            remove_handler(sock_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
+            remove_handler(client_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
           }
           
           p += sizeof(struct inotify_event) + event->len;

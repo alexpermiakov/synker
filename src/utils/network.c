@@ -19,8 +19,8 @@ void extract_connection_info(char *full_path, char *server_ip, int *port, char *
 }
 
 int connect_to_server(char *server_ip, int port) {
-  int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock_fd == -1) {
+  int client_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (client_fd == -1) {
     perror("socket");
     exit(1);
   }
@@ -35,7 +35,7 @@ int connect_to_server(char *server_ip, int port) {
   while(1) {
     printf("Connecting to %s:%d...\n", server_ip, port);
 
-    if (connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == 0) {
+    if (connect(client_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == 0) {
       break;
     }
 
@@ -43,5 +43,5 @@ int connect_to_server(char *server_ip, int port) {
   }
   printf("Connected to %s:%d\n", server_ip, port);
 
-  return sock_fd;
+  return client_fd;
 }
