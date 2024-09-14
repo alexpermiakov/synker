@@ -69,6 +69,11 @@ size_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
     return -1;
   }
 
+  if (fsync(fd) == -1) {
+    perror("fsync");
+    return -1;
+  }
+
   size_t file_size = lseek(fd, 0, SEEK_END);
   if (file_size == -1lu) {
     perror("lseek");
