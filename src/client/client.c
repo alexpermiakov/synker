@@ -62,7 +62,7 @@ void *client(void *args) {
     for (int i = 0; i < num_events; i++) {
       if (events[i].data.fd == inotify_fd) {
         char buf[BUFSIZ];
-        ssize_t len = read(inotify_fd, buf, sizeof(buf));
+        size_t len = read(inotify_fd, buf, sizeof(buf));
         char *p = buf;
 
         while (p < buf + len) {

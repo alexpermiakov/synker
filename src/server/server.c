@@ -18,13 +18,13 @@
 #define MAX_EVENTS 10
 #define PORT 80
 
-ssize_t read_file_attrs(int client_fd, file_attrs_t *file_attrs) {
+size_t read_file_attrs(int client_fd, file_attrs_t *file_attrs) {
   size_t attr_size = sizeof(file_attrs_t);
   char buffer[attr_size];
   
-  ssize_t n = read_n(client_fd, buffer, attr_size);
+  size_t n = read_n(client_fd, buffer, attr_size);
 
-  if (n == -1 || n < attr_size) {
+  if (n == -1lu || n < attr_size) {
     perror("read");
     close(client_fd);
     return -1;
@@ -52,11 +52,11 @@ ssize_t read_file_attrs(int client_fd, file_attrs_t *file_attrs) {
   return 1;
 }
 
-ssize_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
+size_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
   char buffer[BUFSIZ];
-  ssize_t n = read_n(client_fd, buffer, BUFSIZ);
+  size_t n = read_n(client_fd, buffer, BUFSIZ);
 
-  if (n == -1) {
+  if (n == -1lu) {
     perror("read");
     close(client_fd);
     return -1;
@@ -69,7 +69,6 @@ ssize_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
     return -1;
   }
 
-  ssize_t file_size;
   struct stat info;
 
   if (fstat(fd, &info) == -1) {
@@ -77,7 +76,7 @@ ssize_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
     return -1;
   }
 
-  if (file_attrs->size == file_size) {
+  if (file_attrs->size == (size_t)info.st_size) {
     printf("File received\n\n");
     close(fd);
     return 1;
@@ -89,17 +88,15 @@ ssize_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
 int handle_client(int client_fd) {
   while (1) {
     file_attrs_t file_attrs;
-    ssize_t res_attrs = read_file_attrs(client_fd, &file_attrs);
+    size_t res_attrs = read_file_attrs(client_fd, &file_attrs);
 
-    if (res_attrs == -1) {
+    if (res_attrs == -1lu) {
       return -1;
     }
     
-    while (1) {
-      ssize_t res_data = read_file_data(client_fd, &file_attrs);
-      if (res_data == -1 || res_data == 1) {
-        return res_data;
-      }
+    size_t res_data = read_file_data(client_fd, &file_attrs);
+    if (res_data == -1lu || res_data == 1lu) {
+      return res_data;
     }
   }
 

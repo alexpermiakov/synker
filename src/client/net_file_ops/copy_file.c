@@ -29,17 +29,21 @@ void copy_file (int client_fd, char *src_file_path, char *dst_file_path) {
   strcpy(file_attrs.file_path, dst_file_path);
   serialize_file_attrs(&file_attrs, file_attr_buffer);
 
-  if (write_n(client_fd, file_attr_buffer, attr_size) != attr_size) {
-    fprintf(stderr, "Failed to send file attributes\n");
-    close(client_fd);
-    exit(1);
-  }
-
   printf("Send file data\n");
   char file_data_buffer[BUFSIZ];
-  ssize_t bytes_read;
 
-  while ((bytes_read = read(src_fd, file_data_buffer, BUFSIZ)) > 0) {
+  while (1) {
+    if (write_n(client_fd, file_attr_buffer, attr_size) != attr_size) {
+      fprintf(stderr, "Failed to send file attributes\n");
+      close(client_fd);
+      exit(1);
+    }
+
+    size_t bytes_read = read_n(src_fd, file_data_buffer, BUFSIZ);
+    if (bytes_read == 0) {
+      return;
+    }
+    
     if (write_n(client_fd, file_data_buffer, bytes_read) != bytes_read) {
       fprintf(stderr, "Failed to send file data\n");
       close(client_fd);

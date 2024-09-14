@@ -16,6 +16,7 @@
     "stdio.h": "c",
     "network.h": "c",
     "socket.h": "c",
-    "stdint.h": "c"
+    "stdint.h": "c",
+    "types.h": "c"
   }
 }
