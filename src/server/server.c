@@ -69,17 +69,16 @@ size_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
     return -1;
   }
 
-  struct stat info;
-
-  if (fstat(fd, &info) == -1) {
-    perror("fstat");
+  size_t file_size = lseek(fd, 0, SEEK_END);
+  if (file_size == -1lu) {
+    perror("lseek");
     return -1;
   }
 
   printf("file_attrs->size %lu\n", file_attrs->size);
-  printf("info.st_size %lu\n", info.st_size);
+  printf("info.st_size %lu\n", file_size);
 
-  if (file_attrs->size == (size_t)info.st_size) {
+  if (file_attrs->size == file_size) {
     printf("File received\n\n");
     close(fd);
     return 1;
