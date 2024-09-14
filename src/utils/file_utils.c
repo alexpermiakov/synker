@@ -80,6 +80,10 @@ size_t read_n(int fd, char *buffer, size_t n) {
   while (total_read < n) {
     size_t read_amount = read(fd, buffer + total_read, n - total_read);
 
+    if (read_amount == 0lu) {
+     return total_read;
+    }
+
     if (read_amount == -1lu) {
       perror("read");
       return -1;

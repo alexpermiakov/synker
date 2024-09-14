@@ -20,7 +20,6 @@ void copy_file (int client_fd, char *src_file_path, char *dst_file_path) {
     exit(1);
   }
 
-  printf("Send file attributes\n");
   size_t attr_size = sizeof(file_attrs_t);
   char file_attr_buffer[attr_size];
   file_attrs_t file_attrs;
@@ -29,10 +28,10 @@ void copy_file (int client_fd, char *src_file_path, char *dst_file_path) {
   strcpy(file_attrs.file_path, dst_file_path);
   serialize_file_attrs(&file_attrs, file_attr_buffer);
 
-  printf("Send file data\n");
   char file_data_buffer[BUFSIZ];
 
   while (1) {
+    printf("Send file attributes\n");
     if (write_n(client_fd, file_attr_buffer, attr_size) != attr_size) {
       fprintf(stderr, "Failed to send file attributes\n");
       close(client_fd);
@@ -41,9 +40,10 @@ void copy_file (int client_fd, char *src_file_path, char *dst_file_path) {
 
     size_t bytes_read = read_n(src_fd, file_data_buffer, BUFSIZ);
     if (bytes_read == 0) {
-      return;
+      break;
     }
     
+    printf("Send file data\n");
     if (write_n(client_fd, file_data_buffer, bytes_read) != bytes_read) {
       fprintf(stderr, "Failed to send file data\n");
       close(client_fd);
