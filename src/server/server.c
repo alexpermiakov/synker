@@ -15,85 +15,120 @@
 #include "server.h"
 #include "utils/file_utils.h"
 
-#define MAX_EVENTS 10
+#define MAX_EVENTS 64 // maximum number of events to be returned by epoll_wait
 #define PORT 80
 
-int read_file_attrs(int client_fd, file_attrs_t *file_attrs) {
-  size_t attr_size = sizeof(file_attrs_t);
-  char buffer[attr_size];
-  
-  size_t n = read_n(client_fd, buffer, attr_size);
+typedef enum {
+  READING_FILE_ATTRS,
+  READING_FILE_DATA,
+  WRITING_RESPONSE
+} connection_state_t;
 
-  if (n == -1lu || n < attr_size) {
-    perror("read");
-    close(client_fd);
-    return -1;
-  }
+typedef struct {
+  int fd;                     // client socket file descriptor
+  connection_state_t state;   // current state of the connection
+  char buffer[BUFSIZ];        // buffer for reading/writing data
+  size_t buffer_size;         // size of the buffer
+  size_t total_read;          // total bytes read so far
+  size_t total_written;       // total bytes written so far
+  size_t expected_size;       // expected total size of the data to be read
+  file_attrs_t file_attrs;    // file attributes
+  int file_fd;                // file descriptor for the file being written
+} connection_t;
 
-  deserialize_file_attrs(file_attrs, buffer);
-
-  printf("Received file attributes\n");
-  printf("File path: %s\n", file_attrs->file_path);
-  printf("Mode: %d\n", file_attrs->mode);
-  printf("Size: %lu\n", file_attrs->size);
-  printf("Mtime: %lu\n", file_attrs->mtime);
-  printf("Atime: %lu\n", file_attrs->atime);
-  printf("Ctime: %lu\n", file_attrs->ctime);
-
-  if (file_attrs->mode & S_IFDIR) {
-    mkdir(file_attrs->file_path, file_attrs->mode & 0777);
-  } else {
-    if (open(file_attrs->file_path, O_CREAT | O_WRONLY | O_APPEND, file_attrs->mode & 0777) < 0) {
-      perror("open");
-      return -1;
-    }
-  }
-
-  return 1;
-}
-
-ssize_t read_file_data(int client_fd, int fd) {
-  char buffer[BUFSIZ];
-  ssize_t n = read(client_fd, buffer, BUFSIZ);
-
-  if (n < 0) {
-    perror("read");
-    close(client_fd);
-    return -1;
-  }
-
-  if (n == 0) {
-    return 1;
-  }
-
-  if (write(fd, buffer, n) < 0) {
-    perror("write_n");
-    return -1;
-  }
-
-  return 0;
-}
-
-int handle_client(int client_fd) {
-  file_attrs_t file_attrs;
-
-  if (read_file_attrs(client_fd, &file_attrs) < 0) {
-    return -1;
-  }
-
-  int fd = open(file_attrs.file_path, O_CREAT | O_WRONLY | O_APPEND, file_attrs.mode & 0777);
-  ssize_t res_data = 0;
+void handle_client(connection_t *conn, int epoll_fd) {
+  ssize_t result = 0;
 
   while (1) {
-    ssize_t res_data = read_file_data(client_fd, fd);
-    if (res_data == -1 || res_data == 1) {
-      break;
+    if (conn->state == READING_FILE_ATTRS) {
+      size_t attr_size = sizeof(file_attrs_t);
+      result = read_n(conn->fd, conn->buffer, attr_size, conn->total_read);
+      
+      if (result < 0) {
+        perror("read_n");
+        close(conn->fd);
+        close(epoll_fd);
+        break;
+      }
+
+      conn->total_read += result;
+
+      if (conn->total_read == attr_size) {
+        deserialize_file_attrs(&conn->file_attrs, conn->buffer);
+        conn->expected_size = conn->file_attrs.size;
+        conn->total_read = 0;
+
+        conn->file_fd = open(conn->file_attrs.file_path, O_CREAT | O_WRONLY | O_TRUNC, conn->file_attrs.mode & 0777);
+
+        if (conn->fd < 0) {
+          perror("open");
+          close(conn->fd);
+          close(epoll_fd);
+          break;
+        }
+
+        conn->state = READING_FILE_DATA;
+      } else {
+        break; // wait for more data
+      }
+    }
+
+    if (conn->state == READING_FILE_DATA) {
+      while (conn->total_read < conn->expected_size) {
+        size_t to_read = BUFSIZ;
+        if (conn->expected_size - conn->total_read < BUFSIZ) {
+          to_read = conn->expected_size - conn->total_read;
+        }
+
+        result = read(conn->fd, conn->buffer, to_read);
+
+        if (result > 0) {
+          ssize_t bytes_written = 0;
+          ssize_t total_written = 0;
+
+          while(total_written < result) {
+            bytes_written = write(conn->file_fd, conn->buffer + total_written, result - total_written);
+
+            if (bytes_written > 0) {
+              total_written += bytes_written;
+            } else if (bytes_written == -1 && errno == EINTR) {
+              continue;
+            } else if (bytes_written == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+              break;
+            } else {
+              perror("write");
+              close(conn->fd);
+              close(epoll_fd);
+              break;
+            }
+          }
+
+          conn->total_read += result;
+        } else if (result == 0) {
+          perror("read");
+        } else {
+          if (errno == EINTR) {
+            continue;
+          } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            break;
+          } else {
+            perror("read");
+            close(conn->fd);
+            close(epoll_fd);
+            break;
+          }
+        }
+      }
+
+      if (conn->total_read == conn->expected_size) {
+        conn->state = READING_FILE_ATTRS;
+        conn->total_read = 0;
+        conn->expected_size = sizeof(file_attrs_t);
+      } else {
+        break;
+      }
     }
   }
-
-  close(fd);
-
-  return (int)res_data;
 }
 
 void *server () {
@@ -103,9 +138,8 @@ void *server () {
     return NULL;
   }
 
-  int flags = fcntl(server_fd, F_GETFL, 0);
-  if(fcntl(server_fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-    perror("fcntl");
+  if (set_non_blocking(server_fd) < 0) {
+    perror("set_non_blocking");
     return NULL;
   }
 
@@ -133,11 +167,13 @@ void *server () {
   }
 
   struct epoll_event event;
-  event.events = EPOLLIN;
+  event.events = EPOLLIN | EPOLLET; // edge-triggered, meaning that we will be notified only once when new data is available
   event.data.fd = server_fd;
 
   if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event) < 0) {
     perror("epoll_ctl");
+    close(server_fd);
+    close(epoll_fd);
     return NULL;
   }
 
@@ -154,14 +190,25 @@ void *server () {
     }
 
     for (int i = 0; i < num_events; i++) {
-      // incoming connection
+      if (events[i].events & (EPOLLERR | EPOLLHUP)) {
+        perror("epoll_wait");
+        close(events[i].data.fd);
+        continue;
+      }
+
+      // handle incoming connection
       if (events[i].data.fd == server_fd) {
         while(1) {
           socklen_t address_len = sizeof(address);
           int client_fd = accept(server_fd, (struct sockaddr *) &address, &address_len);
 
           if (client_fd < 0) {
-            break;
+            if (errno == EWOULDBLOCK || errno == EAGAIN) { // no more connections
+              break;
+            } else {
+              perror("accept");
+              return NULL;
+            }
           }
 
           if (strcmp(inet_ntoa(address.sin_addr), "136.244.98.188") &&
@@ -172,26 +219,33 @@ void *server () {
           }
 
           printf("Accepted connection\n");
-
-          int flags = fcntl(client_fd, F_GETFL, 0);
-          if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-            perror("fcntl");
+          
+          if (set_non_blocking(client_fd) < 0) {
+            perror("set_non_blocking");
+            close(client_fd);
             continue;
           }
 
-          event.events = EPOLLIN;
-          event.data.fd = client_fd;
+          connection_t *connection = (connection_t *) malloc(sizeof(connection_t));
+          connection->fd = client_fd;
+          connection->state = READING_FILE_ATTRS;
+          connection->expected_size = sizeof(file_attrs_t);
+          connection->file_fd = -1;
+
+          event.events = EPOLLIN | EPOLLET;
+          event.data.ptr = connection;
+
           if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0) {
             perror("epoll_ctl");
+            close(client_fd);
             continue;
           }
 
           printf("New connection from %s:%d\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
         }
-      } else {
-        int client_fd = events[i].data.fd;
-        printf("Received data from %d client\n", client_fd);
-        handle_client(client_fd);
+      } else { // later, handle incoming data
+        connection_t *connection = (connection_t *) events[i].data.ptr;
+        handle_client(connection, epoll_fd);
       }
     }
   }

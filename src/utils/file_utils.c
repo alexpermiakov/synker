@@ -57,39 +57,46 @@ void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
   memcpy(&file_attrs->ctime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
 }
 
-ssize_t write_n(int fd, char *buffer, size_t n) {
-  ssize_t total_written = 0;
+ssize_t write_n(int fd, char *buffer, size_t n, size_t total_written) {
+  while (total_written < n) {
+    ssize_t bytes_written = write(fd, buffer + total_written, n - total_written);
 
-  while (total_written < (ssize_t)n) {
-    ssize_t written_amount = write(fd, buffer + total_written, n - total_written);
-
-    if (written_amount < 0) {
-      perror("write");
-      return -1;
+    if (bytes_written > 0) {
+      total_written += bytes_written;
+    } else {
+      if (errno == EINTR) { // interrupted by signal, try again
+        continue;
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) { // can't write now, wait for next event
+        break;
+      } else {
+        perror("write");
+        return -1;
+      }
     }
-
-    total_written += written_amount;
   }
 
   return total_written;
 }
 
-ssize_t read_n(int fd, char *buffer, size_t n) {
-  ssize_t total_read = 0;
+ssize_t read_n(int fd, char *buffer, size_t n, size_t total_read) {
+  while (total_read < n) {
+    ssize_t bytes_read = read(fd, buffer + total_read, n - total_read);
 
-  while (total_read < (ssize_t)n) {
-    ssize_t read_amount = read(fd, buffer + total_read, n - total_read);
-
-    if (read_amount == 0) {
-      return total_read;
+    if (bytes_read > 0) {
+      total_read += bytes_read;
+    } else if (bytes_read == 0) {
+      break;
+    } else {
+      if (errno == EINTR) { // interrupted by signal, try again
+        continue;
+      }
+      if (errno == EAGAIN || errno == EWOULDBLOCK) { // no more data available now, wait for next event
+        break;
+      } else {
+        perror("read");
+        return -1;
+      }
     }
-
-    if (read_amount < 0) {
-      perror("read");
-      return -1;
-    }
-
-    total_read += read_amount;
   }
 
   return total_read;
