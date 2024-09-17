@@ -88,7 +88,11 @@ ssize_t read_n(int fd, char *buffer, size_t n) {
 
     if (read_amount < 0) {
       if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        return total_read;
+        sleep(0.1);
+        continue;
+      } else {
+        perror("read");
+        return -1;
       }
       perror("read");
       return -1;
