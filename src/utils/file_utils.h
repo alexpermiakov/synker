@@ -9,16 +9,10 @@
 int set_non_blocking(int fd);
 
 typedef struct __attribute__((__packed__)) {
-    uint8_t is_last_chunk;
-} meta_info_t;
-
-typedef struct __attribute__((__packed__)) {
   char file_path[PATH_MAX];
   uint32_t mode;
   uint64_t size;
-  uint64_t mtime;
-  uint64_t atime;
-  uint64_t ctime;
+  uint8_t operation;
 } file_attrs_t;
 
 void extract_file_metadata(char *file_path, file_attrs_t *file_attrs);

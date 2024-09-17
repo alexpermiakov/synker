@@ -7,7 +7,7 @@
 #include "utils/string_utils.h"
 #include "client/helpers/epoll.h"
 #include "client/helpers/inotify.h"
-#include "client/net_file_ops/remove_file.h"
+#include "client/net_file_ops/delete_file.h"
 #include "client/net_file_ops/remove_dir.h"
 #include "client/net_file_ops/copy_file.h"
 #include "client/net_file_ops/copy_dir.h"
@@ -62,7 +62,7 @@ void remove_handler(int client_fd, struct inotify_event *event, char *watched_di
     copy_dir(client_fd, src_file_path, dst_file_path);
     inotify_add_watch_recursively(wd_to_path, path_to_wd, inotify_fd, src_file_path);
   } else {
-    copy_file(client_fd, src_file_path, dst_file_path);
+    delete_file(client_fd, dst_file_path);
   }
 
   free(dst_file_path);

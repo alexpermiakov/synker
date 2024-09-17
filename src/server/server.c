@@ -21,7 +21,7 @@
 typedef enum {
   READING_FILE_ATTRS,
   READING_FILE_DATA,
-  WRITING_RESPONSE
+  DELETING_FILE
 } connection_state_t;
 
 typedef struct {
@@ -52,17 +52,20 @@ int handle_client(connection_t *conn) {
 
       if (conn->total_read == attr_size) {
         deserialize_file_attrs(&conn->file_attrs, conn->buffer);
-        conn->expected_size = conn->file_attrs.size;
-        conn->total_read = 0;
-        conn->file_fd = open(conn->file_attrs.file_path, O_CREAT | O_WRONLY | O_TRUNC, conn->file_attrs.mode & 0777);
-
-        if (conn->file_fd < 0) {
-          perror("open");
-          close(conn->file_fd);
-          return -1;
+        
+        if (conn->file_attrs.operation == 1) {
+          conn->state = DELETING_FILE;
+        } else {
+          conn->state = READING_FILE_DATA;
+          conn->expected_size = conn->file_attrs.size;
+          conn->total_read = 0;
+          conn->file_fd = open(conn->file_attrs.file_path, O_CREAT | O_WRONLY | O_TRUNC, conn->file_attrs.mode & 0777);
+          if (conn->file_fd < 0) {
+            perror("open");
+            close(conn->file_fd);
+            return -1;
+          }
         }
-
-        conn->state = READING_FILE_DATA;
       } else {
         break; // exit this loop, we will read from another epoll event
       }
@@ -99,6 +102,15 @@ int handle_client(connection_t *conn) {
       } else {
         break;
       }
+    }
+
+    if (conn->state == DELETING_FILE) {
+      if (remove(conn->file_attrs.file_path) < 0) {
+        perror("remove");
+        return -1;
+      }
+
+      conn->state = READING_FILE_ATTRS;
     }
   }
 
