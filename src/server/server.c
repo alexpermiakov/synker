@@ -36,7 +36,7 @@ typedef struct {
   int file_fd;                // file descriptor for the file being written
 } connection_t;
 
-void handle_client(connection_t *conn, int epoll_fd) {
+int handle_client(connection_t *conn) {
   ssize_t result = 0;
 
   while (1) {
@@ -47,8 +47,7 @@ void handle_client(connection_t *conn, int epoll_fd) {
       if (result < 0) {
         perror("read_n");
         close(conn->fd);
-        close(epoll_fd);
-        break;
+        return -1;
       }
 
       conn->total_read += result;
@@ -57,14 +56,12 @@ void handle_client(connection_t *conn, int epoll_fd) {
         deserialize_file_attrs(&conn->file_attrs, conn->buffer);
         conn->expected_size = conn->file_attrs.size;
         conn->total_read = 0;
-
         conn->file_fd = open(conn->file_attrs.file_path, O_CREAT | O_WRONLY | O_TRUNC, conn->file_attrs.mode & 0777);
 
         if (conn->fd < 0) {
           perror("open");
           close(conn->fd);
-          close(epoll_fd);
-          break;
+          return -1;
         }
 
         conn->state = READING_FILE_DATA;
@@ -98,8 +95,7 @@ void handle_client(connection_t *conn, int epoll_fd) {
             } else {
               perror("write");
               close(conn->fd);
-              close(epoll_fd);
-              break;
+              return -1;
             }
           }
 
@@ -114,8 +110,7 @@ void handle_client(connection_t *conn, int epoll_fd) {
           } else {
             perror("read");
             close(conn->fd);
-            close(epoll_fd);
-            break;
+            return -1;
           }
         }
       }
@@ -129,6 +124,8 @@ void handle_client(connection_t *conn, int epoll_fd) {
       }
     }
   }
+
+  return 0;
 }
 
 void *server () {
@@ -245,7 +242,12 @@ void *server () {
         }
       } else { // later, handle incoming data
         connection_t *connection = (connection_t *) events[i].data.ptr;
-        handle_client(connection, epoll_fd);
+        if (handle_client(connection) < 0) {
+          epoll_ctl(epoll_fd, EPOLL_CTL_DEL, connection->fd, NULL);
+          close(connection->fd);
+          close(epoll_fd);
+          free(connection);
+        }
       }
     }
   }
