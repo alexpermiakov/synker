@@ -9,7 +9,7 @@
 #include "copy_dir.h"
 #include "copy_file.h"
 #include "remove_dir.h"
-#include "remove_file.h"
+#include "delete_file.h"
 
 void copy_dir (int client_fd, char *src_file_path, char *dst_file_path) {
   if (!is_dir_exists(dst_file_path) && mkdir(dst_file_path, 0777) == -1) {

@@ -29,6 +29,7 @@
     "ostream": "c",
     "sstream": "c",
     "streambuf": "c",
-    "tuple": "c"
+    "tuple": "c",
+    "delete_file.h": "c"
   }
 }

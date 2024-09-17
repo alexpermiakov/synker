@@ -5,37 +5,37 @@
 #include <dirent.h>
 
 #include "remove_dir.h"
-#include "remove_file.h"
+#include "delete_file.h"
 
-void remove_dir(char *path) {
-  DIR *dir = opendir(path);
+// void remove_dir(char *path) {
+//   DIR *dir = opendir(path);
 
-  if (dir == NULL) {
-    perror("opendir");
-    exit(1);
-  }
+//   if (dir == NULL) {
+//     perror("opendir");
+//     exit(1);
+//   }
 
-  struct dirent *entry;
+//   struct dirent *entry;
 
-  while ((entry = readdir(dir)) != NULL) {
-    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-      continue;
-    }
+//   while ((entry = readdir(dir)) != NULL) {
+//     if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+//       continue;
+//     }
 
-    char full_path[PATH_MAX];
-    snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+//     char full_path[PATH_MAX];
+//     snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
 
-    if (entry->d_type == DT_DIR) {
-      remove_dir(full_path);
-    } else {
-      remove_file(full_path);
-    }
-  }
+//     if (entry->d_type == DT_DIR) {
+//       remove_dir(full_path);
+//     } else {
+//       delete_file(full_path);
+//     }
+//   }
 
-  closedir(dir);
+//   closedir(dir);
 
-  if (rmdir(path) == -1) {
-    perror("rmdir");
-    exit(1);
-  }
-}
+//   if (rmdir(path) == -1) {
+//     perror("rmdir");
+//     exit(1);
+//   }
+// }
