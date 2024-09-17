@@ -18,7 +18,7 @@
 #define MAX_EVENTS 10
 #define PORT 80
 
-size_t read_file_attrs(int client_fd, file_attrs_t *file_attrs) {
+int read_file_attrs(int client_fd, file_attrs_t *file_attrs) {
   size_t attr_size = sizeof(file_attrs_t);
   char buffer[attr_size];
   
@@ -52,58 +52,48 @@ size_t read_file_attrs(int client_fd, file_attrs_t *file_attrs) {
   return 1;
 }
 
-size_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
+ssize_t read_file_data(int client_fd, int fd) {
   char buffer[BUFSIZ];
-  size_t n = read_n(client_fd, buffer, BUFSIZ);
+  ssize_t n = read(client_fd, buffer, BUFSIZ);
 
-  if (n == -1lu) {
+  if (n < 0) {
     perror("read");
     close(client_fd);
     return -1;
   }
 
-  int fd = open(file_attrs->file_path, O_CREAT | O_WRONLY | O_APPEND, file_attrs->mode & 0777);
+  if (n == 0) {
+    return 1;
+  }
 
-  if (write_n(fd, buffer, n) != n) {
+  if (write(fd, buffer, n) < 0) {
     perror("write_n");
     return -1;
-  }
-
-  struct stat st;
-
-  if (fstat(fd, &st) == -1) {
-    perror("stat");
-    return -1;
-  }
-
-  printf("st.st_size %lu\n", st.st_size);
-  printf("expected size %lu\n", file_attrs->size);
-
-  if ((size_t)st.st_size == file_attrs->size) {
-    printf("File received\n\n");
-    close(fd);
-    return 1;
   }
 
   return 0;
 }
 
 int handle_client(int client_fd) {
-  while (1) {
-    file_attrs_t file_attrs;
-    size_t res_attrs = read_file_attrs(client_fd, &file_attrs);
+  file_attrs_t file_attrs;
 
-    if (res_attrs == -1lu) {
-      return -1;
-    }
-    
-    size_t res_data = read_file_data(client_fd, &file_attrs);
-    if (res_data == -1lu || res_data == 1lu) {
-      return res_data;
+  if (read_file_attrs(client_fd, &file_attrs) < 0) {
+    return -1;
+  }
+
+  int fd = open(file_attrs.file_path, O_CREAT | O_WRONLY | O_APPEND, file_attrs.mode & 0777);
+  ssize_t res_data = 0;
+
+  while (1) {
+    ssize_t res_data = read_file_data(client_fd, fd);
+    if (res_data == -1 || res_data == 1) {
+      break;
     }
   }
 
-  return 0;
+  close(fd);
+
+  return (int)res_data;
 }
 
 void *server () {
