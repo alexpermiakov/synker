@@ -70,11 +70,6 @@ size_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
   }
   close(fd);
 
-  if (fsync(fd) == -1) {
-    perror("fsync");
-    return -1;
-  }
-
   struct stat st;
 
   if (stat(file_attrs->file_path, &st) == -1) {
