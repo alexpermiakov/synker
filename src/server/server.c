@@ -54,8 +54,6 @@ int handle_client(connection_t *conn) {
         deserialize_file_attrs(&conn->file_attrs, conn->buffer);
         
         if (conn->file_attrs.operation == 1) {
-          conn->state = DELETING_FILE;
-        } else {
           conn->state = READING_FILE_DATA;
           conn->expected_size = conn->file_attrs.size;
           conn->total_read = 0;
@@ -65,6 +63,8 @@ int handle_client(connection_t *conn) {
             close(conn->file_fd);
             return -1;
           }
+        } else if (conn->file_attrs.operation == 2) {
+          conn->state = DELETING_FILE;
         }
       } else {
         break; // exit this loop, we will read from another epoll event
