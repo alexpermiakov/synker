@@ -78,6 +78,7 @@ ssize_t read_n(int fd, char *buffer, size_t n) {
   ssize_t total_read = 0;
 
   while (total_read < (ssize_t)n) {
+    printf("n - total_read %zd\n", n - total_read);
     ssize_t read_amount = read(fd, buffer + total_read, n - total_read);
 
     printf("read_amount %zd\n", read_amount);
@@ -87,13 +88,6 @@ ssize_t read_n(int fd, char *buffer, size_t n) {
     }
 
     if (read_amount < 0) {
-      if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        sleep(0.1);
-        continue;
-      } else {
-        perror("read");
-        return -1;
-      }
       perror("read");
       return -1;
     }
