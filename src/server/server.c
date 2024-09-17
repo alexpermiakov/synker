@@ -80,6 +80,14 @@ size_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
     return -1;
   }
 
+  struct stat st;
+
+  if (fstat(fd, &st) == -1) {
+    perror("stat");
+    return -1;
+  }
+
+  printf("st.st_size %lu\n", st.st_size);
   printf("file_attrs->size %lu\n", file_attrs->size);
   printf("file_size %lu\n", file_size);
 
