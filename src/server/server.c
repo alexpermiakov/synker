@@ -37,12 +37,10 @@ typedef struct {
 } connection_t;
 
 int handle_client(connection_t *conn) {
-  ssize_t result = 0;
-
   while (1) {
     if (conn->state == READING_FILE_ATTRS) {
       size_t attr_size = sizeof(file_attrs_t);
-      result = read(conn->fd, conn->buffer, attr_size);
+      ssize_t result = read_n(conn->fd, conn->buffer, attr_size);
       
       if (result < 0) {
         perror("read_n");
@@ -58,15 +56,15 @@ int handle_client(connection_t *conn) {
         conn->total_read = 0;
         conn->file_fd = open(conn->file_attrs.file_path, O_CREAT | O_WRONLY | O_TRUNC, conn->file_attrs.mode & 0777);
 
-        if (conn->fd < 0) {
+        if (conn->file_fd < 0) {
           perror("open");
-          close(conn->fd);
+          close(conn->file_fd);
           return -1;
         }
 
         conn->state = READING_FILE_DATA;
       } else {
-        break; // wait for more data
+        break; // exit this loop, we will read from another epoll event
       }
     }
 
@@ -77,48 +75,27 @@ int handle_client(connection_t *conn) {
           to_read = conn->expected_size - conn->total_read;
         }
 
-        result = read(conn->fd, conn->buffer, to_read);
+        ssize_t n = read_n(conn->fd, conn->buffer, to_read);
+        if (n < 0) {
+          close(conn->fd);
+          return -1;
+        } 
 
-        if (result > 0) {
-          ssize_t bytes_written = 0;
-          ssize_t total_written = 0;
-
-          while(total_written < result) {
-            bytes_written = write(conn->file_fd, conn->buffer + total_written, result - total_written);
-
-            if (bytes_written > 0) {
-              total_written += bytes_written;
-            } else if (bytes_written == -1 && errno == EINTR) {
-              continue;
-            } else if (bytes_written == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-              break;
-            } else {
-              perror("write");
-              close(conn->fd);
-              return -1;
-            }
-          }
-
-          conn->total_read += result;
-        } else if (result == 0) {
-          perror("read");
-        } else {
-          if (errno == EINTR) {
-            continue;
-          } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            break;
-          } else {
-            perror("read");
-            close(conn->fd);
-            return -1;
-          }
+        if (write_n(conn->file_fd, conn->buffer, n) < 0) {
+          close(conn->file_fd);
+          return -1;
         }
+
+        conn->total_read += n;
       }
 
       if (conn->total_read == conn->expected_size) {
         conn->state = READING_FILE_ATTRS;
         conn->total_read = 0;
         conn->expected_size = sizeof(file_attrs_t);
+
+        close(conn->file_fd);
+        conn->file_fd = -1;
       } else {
         break;
       }
@@ -182,6 +159,9 @@ void *server () {
     printf("Received %d events\n", num_events);
     
     if (num_events < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
       perror("epoll_wait");
       return NULL;
     }
@@ -233,6 +213,7 @@ void *server () {
           event.data.ptr = connection;
 
           if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0) {
+            free(connection);
             perror("epoll_ctl");
             close(client_fd);
             continue;
@@ -245,7 +226,6 @@ void *server () {
         if (handle_client(connection) < 0) {
           epoll_ctl(epoll_fd, EPOLL_CTL_DEL, connection->fd, NULL);
           close(connection->fd);
-          close(epoll_fd);
           free(connection);
         }
       }

@@ -66,3 +66,45 @@ bool is_dir_exists(char *path) {
 
   return info.st_mode & S_IFDIR;
 }
+
+ssize_t read_n(int fd, char *buffer, ssize_t size) {
+  ssize_t total = 0;
+  
+  while (total < size) {
+    ssize_t n = read(fd, buffer + total, size - total);
+
+    if (n > 0) {
+      total += n;
+    } else if (n == -1 && errno == EINTR) {
+      continue;
+    } else if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+      break;
+    } else {
+      perror("read");
+      return -1;
+    }
+  }
+
+  return total;
+}
+
+ssize_t write_n(int fd, char *buffer, ssize_t size) {
+  ssize_t total = 0;
+
+  while(total < size) {
+    ssize_t n = write(fd, buffer + total, size - total);
+
+    if (n > 0) {
+      total += n;
+    } else if (n == -1 && errno == EINTR) {
+      continue;
+    } else if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+      break;
+    } else {
+      perror("write");
+      return -1;
+    }
+  }
+
+  return total;
+}
