@@ -68,30 +68,26 @@ size_t read_file_data(int client_fd, file_attrs_t *file_attrs) {
     perror("write_n");
     return -1;
   }
+  close(fd);
 
   if (fsync(fd) == -1) {
     perror("fsync");
     return -1;
   }
 
-  size_t file_size = lseek(fd, 0, SEEK_END);
-  if (file_size == -1lu) {
-    perror("lseek");
-    return -1;
-  }
-
   struct stat st;
 
-  if (fstat(fd, &st) == -1) {
+  if (stat(file_attrs->file_path, &st) == -1) {
     perror("stat");
     return -1;
   }
 
-  printf("st.st_size %lu\n", st.st_size);
-  printf("file_attrs->size %lu\n", file_attrs->size);
-  printf("file_size %lu\n", file_size);
+  size_t actual_size = st.st_size;
 
-  if (file_attrs->size == file_size) {
+  printf("actual size %lu\n", actual_size);
+  printf("expected size %lu\n", file_attrs->size);
+
+  if (actual_size >= file_attrs->size) {
     printf("File received\n\n");
     close(fd);
     return 1;
