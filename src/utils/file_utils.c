@@ -74,17 +74,22 @@ size_t write_n(int fd, char *buffer, size_t n) {
   return total_written;
 }
 
-size_t read_n(int fd, char *buffer, size_t n) {
-  size_t total_read = 0;
+ssize_t read_n(int fd, char *buffer, size_t n) {
+  ssize_t total_read = 0;
 
-  while (total_read < n) {
-    size_t read_amount = read(fd, buffer + total_read, n - total_read);
+  while (total_read < (ssize_t)n) {
+    ssize_t read_amount = read(fd, buffer + total_read, n - total_read);
 
-    if (read_amount == 0lu) {
+    printf("read_amount %lu\n", read_amount);
+
+    if (read_amount == 0) {
      return total_read;
     }
 
-    if (read_amount == -1lu) {
+    if (read_amount < 0) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        continue;
+      }
       perror("read");
       return -1;
     }
