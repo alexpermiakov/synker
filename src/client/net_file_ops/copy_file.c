@@ -29,7 +29,7 @@ void copy_file (int client_fd, char *src_file_path, char *dst_file_path) {
   serialize_file_attrs(&file_attrs, file_attr_buffer);
 
   printf("Send file attributes\n");
-  if (write_n(client_fd, file_attr_buffer, attr_size) != attr_size) {
+  if (write(client_fd, file_attr_buffer, attr_size) < 0) {
     fprintf(stderr, "Failed to send file attributes\n");
     close(client_fd);
     exit(1);

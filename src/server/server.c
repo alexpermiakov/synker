@@ -42,7 +42,7 @@ void handle_client(connection_t *conn, int epoll_fd) {
   while (1) {
     if (conn->state == READING_FILE_ATTRS) {
       size_t attr_size = sizeof(file_attrs_t);
-      result = read_n(conn->fd, conn->buffer, attr_size, conn->total_read);
+      result = read(conn->fd, conn->buffer, attr_size);
       
       if (result < 0) {
         perror("read_n");

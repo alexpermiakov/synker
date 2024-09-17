@@ -57,7 +57,9 @@ void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
   memcpy(&file_attrs->ctime, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t), sizeof(uint64_t));
 }
 
-ssize_t write_n(int fd, char *buffer, size_t n, size_t total_written) {
+ssize_t write_n(int fd, char *buffer, size_t n) {
+  size_t total_written = 0;
+
   while (total_written < n) {
     ssize_t bytes_written = write(fd, buffer + total_written, n - total_written);
 
@@ -78,7 +80,9 @@ ssize_t write_n(int fd, char *buffer, size_t n, size_t total_written) {
   return total_written;
 }
 
-ssize_t read_n(int fd, char *buffer, size_t n, size_t total_read) {
+ssize_t read_n(int fd, char *buffer, size_t n) {
+  size_t total_read = 0;
+
   while (total_read < n) {
     ssize_t bytes_read = read(fd, buffer + total_read, n - total_read);
 
