@@ -37,6 +37,9 @@ typedef struct {
 
 int handle_client(connection_t *conn) {
   while (1) {
+    printf("Reading data from client\n");
+    printf("State: %d\n", conn->state);
+
     if (conn->state == READING_FILE_ATTRS) {
       size_t attr_size = sizeof(file_attrs_t);
       ssize_t n = read_n(conn->fd, conn->buffer, attr_size);
@@ -47,11 +50,11 @@ int handle_client(connection_t *conn) {
         return -1;
       }
 
+      conn->total_read += n;
+
       if ((size_t) n < attr_size) {
         break; // exit this loop, we will read from another epoll event
       }
-
-      conn->total_read += n;
 
       if (conn->total_read == attr_size) {
         deserialize_file_attrs(&conn->file_attrs, conn->buffer);
