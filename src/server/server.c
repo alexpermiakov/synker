@@ -48,7 +48,7 @@ int handle_client(connection_t *conn) {
         return -1;
       }
 
-      if ((size_t)n < attr_size) {
+      if ((size_t) n < attr_size) {
         break; // exit this loop, we will read from another epoll event
       }
 
@@ -68,7 +68,12 @@ int handle_client(connection_t *conn) {
             return -1;
           }
         } else if (conn->file_attrs.operation == 2) {
-          conn->state = DELETING_FILE;
+          if (remove(conn->file_attrs.file_path) < 0) {
+            perror("remove");
+            return -1;
+          }
+
+          conn->state = READING_FILE_ATTRS;
         }
       } else {
         break; // exit this loop, we will read from another epoll event
@@ -107,15 +112,6 @@ int handle_client(connection_t *conn) {
       } else {
         break;
       }
-    }
-
-    if (conn->state == DELETING_FILE) {
-      if (remove(conn->file_attrs.file_path) < 0) {
-        perror("remove");
-        return -1;
-      }
-
-      conn->state = READING_FILE_ATTRS;
     }
   }
 
