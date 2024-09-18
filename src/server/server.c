@@ -48,7 +48,7 @@ int handle_client(connection_t *conn) {
         return -1;
       }
 
-      if (n < attr_size) {
+      if ((size_t)n < attr_size) {
         break; // exit this loop, we will read from another epoll event
       }
 
