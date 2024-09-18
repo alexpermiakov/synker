@@ -57,11 +57,16 @@ int handle_client(connection_t *conn) {
       if (conn->total_read == attr_size) {
         deserialize_file_attrs(&conn->file_attrs, conn->buffer);
         
+        printf("Received file attributes\n");
+        printf("File path: %s\n", conn->file_attrs.file_path);
+        printf("File operation: %d\n", conn->file_attrs.operation);
+
         if (conn->file_attrs.operation == 1) {
           conn->state = READING_FILE_DATA;
           conn->expected_size = conn->file_attrs.size;
           conn->total_read = 0;
           conn->file_fd = open(conn->file_attrs.file_path, O_CREAT | O_WRONLY | O_TRUNC, conn->file_attrs.mode & 0777);
+          
           if (conn->file_fd < 0) {
             perror("open");
             close(conn->file_fd);
