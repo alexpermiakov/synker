@@ -20,8 +20,7 @@
 
 typedef enum {
   READING_FILE_ATTRS,
-  READING_FILE_DATA,
-  DELETING_FILE
+  READING_FILE_DATA
 } connection_state_t;
 
 typedef struct {
@@ -77,8 +76,6 @@ int handle_client(connection_t *conn) {
             perror("remove");
             return -1;
           }
-
-          conn->state = READING_FILE_ATTRS;
         }
       } else {
         break; // exit this loop, we will read from another epoll event
