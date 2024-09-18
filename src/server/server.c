@@ -59,7 +59,7 @@ int handle_client(connection_t *conn) {
         
         printf("Received file attributes\n");
         printf("File path: %s\n", conn->file_attrs.file_path);
-        printf("File operation: %d\n", conn->file_attrs.operation);
+        printf("File operation: %hhu\n", conn->file_attrs.operation);
 
         if (conn->file_attrs.operation == 1) {
           conn->state = READING_FILE_DATA;
