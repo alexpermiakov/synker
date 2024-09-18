@@ -68,9 +68,9 @@ ssize_t read_n(int fd, char *buffer, ssize_t size) {
 
     if (n > 0) {
       total += n;
-    } else if (n == -1 && errno == EINTR) {
+    } else if (n == -1 && errno == EINTR) { // interrupted by signal
       continue;
-    } else if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+    } else if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) { // no more data for now
       break;
     } else {
       perror("read");
@@ -89,9 +89,9 @@ ssize_t write_n(int fd, char *buffer, ssize_t size) {
 
     if (n > 0) {
       total += n;
-    } else if (n == -1 && errno == EINTR) {
+    } else if (n == -1 && errno == EINTR) { // interrupted by signal
       continue;
-    } else if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+    } else if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {  // no more data for now
       break;
     } else {
       perror("write");
