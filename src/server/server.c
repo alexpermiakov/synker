@@ -20,7 +20,8 @@
 
 typedef enum {
   READING_FILE_ATTRS,
-  READING_FILE_DATA
+  READING_FILE_DATA,
+  DELETING_FILE
 } connection_state_t;
 
 typedef struct {
@@ -75,17 +76,12 @@ int handle_client(connection_t *conn) {
             return -1;
           }
         } else if (conn->file_attrs.operation == 2) {
-          if (remove(conn->file_attrs.file_path) < 0) {
-            perror("remove");
-            return -1;
-          }
+          conn->state = DELETING_FILE;
         }
       } else {
         break; // exit this loop, we will read from another epoll event
       }
-    }
-
-    if (conn->state == READING_FILE_DATA) {
+    } if (conn->state == READING_FILE_DATA) {
       while (conn->total_read < conn->expected_size) {
         size_t to_read = BUFSIZ;
         if (conn->expected_size - conn->total_read < BUFSIZ) {
@@ -117,6 +113,15 @@ int handle_client(connection_t *conn) {
       } else {
         break;
       }
+    } else if (conn->state == DELETING_FILE) {
+      if (remove(conn->file_attrs.file_path) < 0) {
+        perror("remove");
+        return -1;
+      }
+      conn->state = READING_FILE_ATTRS;
+      conn->total_read = 0;
+      conn->expected_size = sizeof(file_attrs_t);
+      conn->file_fd = -1;
     }
   }
 
