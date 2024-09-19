@@ -40,8 +40,8 @@ void copy_file (int client_fd, char *src_file_path, char *dst_file_path) {
   ssize_t bytes_read = 0;
   printf("Send file data\n");
 
-  while ((bytes_read = read_n(src_fd, file_data_buffer, BUFSIZ)) > 0) {
-    if (write_n(client_fd, file_data_buffer, bytes_read) < 0) {
+  while ((bytes_read = read(src_fd, file_data_buffer, BUFSIZ)) > 0) {
+    if (write(client_fd, file_data_buffer, bytes_read) < 0) {
       fprintf(stderr, "Failed to send file data\n");
       close(client_fd);
       exit(1);
