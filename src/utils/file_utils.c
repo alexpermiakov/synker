@@ -60,7 +60,7 @@ bool is_dir_exists(char *path) {
   return info.st_mode & S_IFDIR;
 }
 
-ssize_t read_n(int fd, char *buffer, ssize_t size) {
+ssize_t try_read_n(int fd, char *buffer, ssize_t size) {
   ssize_t total = 0;
   
   while (total < size) {

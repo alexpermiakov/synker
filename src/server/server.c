@@ -42,19 +42,15 @@ int handle_client(connection_t *conn) {
 
     if (conn->state == READING_FILE_ATTRS) {
       size_t attr_size = sizeof(file_attrs_t);
-      ssize_t n = read_n(conn->fd, conn->buffer, attr_size);
+      ssize_t n = try_read_n(conn->fd, conn->buffer, attr_size);
       
       if (n < 0) {
-        perror("read_n");
+        perror("try_read_n");
         close(conn->fd);
         return -1;
       }
 
       conn->total_read += n;
-
-      if ((size_t) n < attr_size) {
-        break; // exit this loop, we will read from another epoll event
-      }
 
       if (conn->total_read == attr_size) {
         deserialize_file_attrs(&conn->file_attrs, conn->buffer);
@@ -92,7 +88,7 @@ int handle_client(connection_t *conn) {
           to_read = conn->expected_size - conn->total_read;
         }
 
-        ssize_t n = read_n(conn->fd, conn->buffer, to_read);
+        ssize_t n = try_read_n(conn->fd, conn->buffer, to_read);
         
         if (n < 0) {
           close(conn->fd);

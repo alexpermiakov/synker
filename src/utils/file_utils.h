@@ -18,7 +18,7 @@ typedef struct __attribute__((__packed__)) {
 void extract_file_metadata(char *file_path, file_attrs_t *file_attrs);
 void serialize_file_attrs (file_attrs_t *file_attrs, char *buffer);
 void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer);
-ssize_t read_n(int fd, char *buffer, ssize_t size);
+ssize_t try_read_n(int fd, char *buffer, ssize_t size);
 ssize_t write_n(int fd, char *buffer, ssize_t size);
 bool is_dir_exists(char *path);
 
