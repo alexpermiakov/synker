@@ -89,12 +89,12 @@ int handle_client(connection_t *conn) {
       }
     } if (conn->state == READING_FILE_DATA) {
       while (conn->total_read < conn->expected_size) {
-        // size_t to_read = BUFSIZ;
-        // if (conn->expected_size - conn->total_read < BUFSIZ) {
-        //   to_read = conn->expected_size - conn->total_read;
-        // }
+        size_t to_read = BUFSIZ;
+        if (conn->expected_size - conn->total_read < BUFSIZ) {
+          to_read = conn->expected_size - conn->total_read;
+        }
 
-        ssize_t n = read(conn->fd, conn->buffer, BUFSIZ);
+        ssize_t n = read(conn->fd, conn->buffer, to_read);
         
         if (n < 0) {
           break;
