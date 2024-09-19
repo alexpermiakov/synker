@@ -36,6 +36,49 @@ typedef struct {
   int file_fd;                // file descriptor for the file being written
 } connection_t;
 
+int remove_dir(char *path) {
+  DIR *dir = opendir(path);
+
+  if (dir == NULL) {
+    perror("opendir");
+    return -1;
+  }
+
+  struct dirent *entry;
+  while ((entry = readdir(dir)) != NULL) {
+    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+      continue;
+    }
+
+    char full_path[PATH_MAX];
+    snprintf(full_path, PATH_MAX, "%s/%s", path, entry->d_name);
+
+    struct stat st;
+    if (stat(full_path, &st) < 0) {
+      perror("stat");
+      return -1;
+    }
+
+    if (S_ISDIR(st.st_mode)) {
+      remove_dir(full_path);
+    } else {
+      if (remove(full_path) < 0) {
+        perror("remove");
+        return -1;
+      }
+    }
+  }
+
+  closedir(dir);
+
+  if (remove(path) < 0) {
+    perror("remove");
+    return -1;
+  }
+
+  return 0;
+}
+
 int handle_client(connection_t *conn) {
   while (1) {
     printf("Reading data from client\n");
@@ -80,6 +123,8 @@ int handle_client(connection_t *conn) {
             if (write(conn->file_fd, conn->buffer + attr_size, conn->total_read - attr_size) < 0) {
               break;
             }
+          } else {
+            break;
           }
 
         } else if (conn->file_attrs.operation == 2) {
@@ -118,9 +163,22 @@ int handle_client(connection_t *conn) {
         break;
       }
     } else if (conn->state == DELETING_FILE) {
-      if (remove(conn->file_attrs.file_path) < 0) {
-        perror("remove");
+      struct stat st;
+      if (stat(conn->file_attrs.file_path, &st) < 0) {
+        perror("stat");
         return -1;
+      }
+
+      if (S_ISDIR(st.st_mode)) {
+        if (remove_dir(conn->file_attrs.file_path)) {
+          perror("remove_dir");
+          return -1;
+        }
+      } else {
+        if (remove(conn->file_attrs.file_path) < 0) {
+          perror("remove");
+          return -1;
+        }
       }
       conn->state = READING_FILE_ATTRS;
       conn->total_read = 0;

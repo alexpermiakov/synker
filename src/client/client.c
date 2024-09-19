@@ -77,7 +77,7 @@ void *client(void *args) {
           }
 
           if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
-            remove_handler(client_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
+            delete_handler(client_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
           }
           
           p += sizeof(struct inotify_event) + event->len;

@@ -8,7 +8,7 @@
 #include "utils/file_utils.h"
 #include "copy_dir.h"
 #include "copy_file.h"
-#include "remove_dir.h"
+#include "delete_dir.h"
 #include "delete_file.h"
 
 void copy_dir (int client_fd, char *src_file_path, char *dst_file_path) {
