@@ -36,49 +36,6 @@ typedef struct {
   int file_fd;                // file descriptor for the file being written
 } connection_t;
 
-int remove_dir(char *path) {
-  DIR *dir = opendir(path);
-
-  if (dir == NULL) {
-    perror("opendir");
-    return -1;
-  }
-
-  struct dirent *entry;
-  while ((entry = readdir(dir)) != NULL) {
-    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-      continue;
-    }
-
-    char full_path[PATH_MAX];
-    snprintf(full_path, PATH_MAX, "%s/%s", path, entry->d_name);
-
-    struct stat st;
-    if (stat(full_path, &st) < 0) {
-      perror("stat");
-      return -1;
-    }
-
-    if (S_ISDIR(st.st_mode)) {
-      remove_dir(full_path);
-    } else {
-      if (remove(full_path) < 0) {
-        perror("remove");
-        return -1;
-      }
-    }
-  }
-
-  closedir(dir);
-
-  if (remove(path) < 0) {
-    perror("remove");
-    return -1;
-  }
-
-  return 0;
-}
-
 int handle_client(connection_t *conn) {
   while (1) {
     printf("Reading data from client\n");
@@ -105,7 +62,17 @@ int handle_client(connection_t *conn) {
         printf("File path: %s\n", conn->file_attrs.file_path);
         printf("File operation: %hhu\n", conn->file_attrs.operation);
 
-        if (conn->file_attrs.operation == 1) {
+        if (conn->file_attrs.operation == CREATE_DIR) {
+          if (mkdir(conn->file_attrs.file_path, conn->file_attrs.mode & 0777) < 0) {
+            perror("mkdir");
+            return -1;
+          }
+          conn->state = READING_FILE_ATTRS;
+          conn->total_read = 0;
+          conn->expected_size = sizeof(file_attrs_t);
+          conn->file_fd = -1;
+
+        } else if (conn->file_attrs.operation == CREATE_FILE) {
           conn->state = READING_FILE_DATA;
           conn->expected_size = conn->file_attrs.size;
           conn->total_read = 0;
@@ -127,7 +94,7 @@ int handle_client(connection_t *conn) {
             break;
           }
 
-        } else if (conn->file_attrs.operation == 2) {
+        } else if (conn->file_attrs.operation == DELETE) {
           conn->state = DELETING_FILE;
           printf("Updated state %d\n", conn->state);
         }

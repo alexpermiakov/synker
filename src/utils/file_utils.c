@@ -6,8 +6,52 @@
 #include <stdbool.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <dirent.h>
 
 #include "file_utils.h"
+
+int remove_dir(char *path) {
+  DIR *dir = opendir(path);
+
+  if (dir == NULL) {
+    perror("opendir");
+    return -1;
+  }
+
+  struct dirent *entry;
+  while ((entry = readdir(dir)) != NULL) {
+    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+      continue;
+    }
+
+    char full_path[PATH_MAX];
+    snprintf(full_path, PATH_MAX, "%s/%s", path, entry->d_name);
+
+    struct stat st;
+    if (stat(full_path, &st) < 0) {
+      perror("stat");
+      return -1;
+    }
+
+    if (S_ISDIR(st.st_mode)) {
+      remove_dir(full_path);
+    } else {
+      if (remove(full_path) < 0) {
+        perror("remove");
+        return -1;
+      }
+    }
+  }
+
+  closedir(dir);
+
+  if (remove(path) < 0) {
+    perror("remove");
+    return -1;
+  }
+
+  return 0;
+}
 
 int set_non_blocking(int fd) {
   int flags = fcntl(fd, F_GETFL, 0);

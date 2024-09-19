@@ -15,6 +15,14 @@ typedef struct __attribute__((__packed__)) {
   uint8_t operation;
 } file_attrs_t;
 
+typedef enum {
+  CREATE_FILE = 1,
+  DELETE,
+  CREATE_DIR,
+  MODIFY
+} operation_t;
+
+int remove_dir(char *path);
 void extract_file_metadata(char *file_path, file_attrs_t *file_attrs);
 void serialize_file_attrs (file_attrs_t *file_attrs, char *buffer);
 void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer);

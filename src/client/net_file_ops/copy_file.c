@@ -26,7 +26,7 @@ void copy_file (int client_fd, char *src_file_path, char *dst_file_path) {
   
   extract_file_metadata(src_file_path, &file_attrs);
   strcpy(file_attrs.file_path, dst_file_path);
-  file_attrs.operation = 1;
+  file_attrs.operation = CREATE_FILE;
   serialize_file_attrs(&file_attrs, file_attr_buffer);
 
   printf("Send file attributes\n");

@@ -18,7 +18,7 @@ void delete_file(int client_fd, char *dst_file_path) {
   file_attrs_t file_attrs;
   
   strcpy(file_attrs.file_path, dst_file_path);
-  file_attrs.operation = 2;
+  file_attrs.operation = DELETE;
   serialize_file_attrs(&file_attrs, file_attr_buffer);
 
   printf("Remove file %s\n", dst_file_path);

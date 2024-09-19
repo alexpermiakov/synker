@@ -24,6 +24,22 @@ void copy_dir (int client_fd, char *src_file_path, char *dst_file_path) {
     exit(1);
   }
 
+  ssize_t attr_size = sizeof(file_attrs_t);
+  char file_attr_buffer[attr_size];
+  file_attrs_t file_attrs;
+  
+  extract_file_metadata(src_file_path, &file_attrs);
+  strcpy(file_attrs.file_path, dst_file_path);
+  file_attrs.operation = CREATE_DIR;
+  serialize_file_attrs(&file_attrs, file_attr_buffer);
+
+  printf("Send directory attributes\n");
+  if (write_n(client_fd, file_attr_buffer, attr_size) < 0) {
+    fprintf(stderr, "Failed to send file attributes\n");
+    close(client_fd);
+    exit(1);
+  }
+
   struct dirent *entry;
 
   while((entry = readdir(dir)) != NULL) {
