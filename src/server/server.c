@@ -50,8 +50,8 @@ int handle_client(connection_t *conn) {
         return -1;
       }
 
-      printf("Read %zx bytes\n", n);
-      printf("attr_size: %zu\n", attr_size);
+      printf("Read %zd bytes\n", n);
+      printf("attr_size: %zu bytes\n", attr_size);
 
       conn->total_read += n;
 
