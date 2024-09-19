@@ -50,6 +50,9 @@ int handle_client(connection_t *conn) {
         return -1;
       }
 
+      printf("Read %zx bytes\n", n);
+      printf("attr_size: %zu\n", attr_size);
+
       conn->total_read += n;
 
       if (conn->total_read == attr_size) {
@@ -170,7 +173,6 @@ void *server () {
   while (1) {
     printf("Waiting for events\n\n");
     int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-    printf("Received %d events\n", num_events);
     
     if (num_events < 0) {
       if (errno == EINTR) {
