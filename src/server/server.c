@@ -42,7 +42,7 @@ int handle_client(connection_t *conn) {
 
     if (conn->state == READING_FILE_ATTRS) {
       size_t attr_size = sizeof(file_attrs_t);
-      ssize_t n = read_n(conn->fd, conn->buffer, attr_size);
+      ssize_t n = read(conn->fd, conn->buffer, attr_size);
       
       if (n < 0) {
         perror("read_n");
@@ -50,10 +50,11 @@ int handle_client(connection_t *conn) {
         return -1;
       }
 
+      conn->total_read += n;
+
       printf("Read %zd bytes\n", n);
       printf("attr_size: %zu bytes\n", attr_size);
-
-      conn->total_read += n;
+      printf("total_read: %zu bytes\n", conn->total_read);
 
       if (conn->total_read == attr_size) {
         deserialize_file_attrs(&conn->file_attrs, conn->buffer);
