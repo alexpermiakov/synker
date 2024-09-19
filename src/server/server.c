@@ -46,9 +46,7 @@ int handle_client(connection_t *conn) {
       ssize_t n = read(conn->fd, conn->buffer, attr_size);
       
       if (n < 0) {
-        perror("read_n");
-        close(conn->fd);
-        return -1;
+        break;
       }
 
       conn->total_read += n;
@@ -57,7 +55,7 @@ int handle_client(connection_t *conn) {
       printf("attr_size: %zu bytes\n", attr_size);
       printf("total_read: %zu bytes\n", conn->total_read);
 
-      if (conn->total_read == attr_size) {
+      if (conn->total_read >= attr_size) {
         deserialize_file_attrs(&conn->file_attrs, conn->buffer);
         
         printf("Received file attributes\n");
@@ -70,34 +68,40 @@ int handle_client(connection_t *conn) {
           conn->total_read = 0;
           conn->file_fd = open(conn->file_attrs.file_path, O_CREAT | O_WRONLY | O_TRUNC, conn->file_attrs.mode & 0777);
           
+          printf("Updated state %d\n", conn->state);
+
           if (conn->file_fd < 0) {
             perror("open");
             close(conn->file_fd);
             return -1;
           }
+
+          if (conn->total_read > attr_size) {
+            if (write(conn->file_fd, conn->buffer + attr_size, conn->total_read - attr_size) < 0) {
+              break;
+            }
+          }
+
         } else if (conn->file_attrs.operation == 2) {
           conn->state = DELETING_FILE;
+          printf("Updated state %d\n", conn->state);
         }
-      } else {
-        break; // exit this loop, we will read from another epoll event
       }
     } if (conn->state == READING_FILE_DATA) {
       while (conn->total_read < conn->expected_size) {
-        size_t to_read = BUFSIZ;
-        if (conn->expected_size - conn->total_read < BUFSIZ) {
-          to_read = conn->expected_size - conn->total_read;
-        }
+        // size_t to_read = BUFSIZ;
+        // if (conn->expected_size - conn->total_read < BUFSIZ) {
+        //   to_read = conn->expected_size - conn->total_read;
+        // }
 
-        ssize_t n = read_n(conn->fd, conn->buffer, to_read);
+        ssize_t n = read(conn->fd, conn->buffer, BUFSIZ);
         
         if (n < 0) {
-          close(conn->fd);
-          return -1;
+          break;
         }
 
-        if (write_n(conn->file_fd, conn->buffer, n) < 0) {
-          close(conn->file_fd);
-          return -1;
+        if (write(conn->file_fd, conn->buffer, n) < 0) {
+          break;
         }
 
         conn->total_read += n;
