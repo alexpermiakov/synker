@@ -42,10 +42,10 @@ int handle_client(connection_t *conn) {
 
     if (conn->state == READING_FILE_ATTRS) {
       size_t attr_size = sizeof(file_attrs_t);
-      ssize_t n = try_read_n(conn->fd, conn->buffer, attr_size);
+      ssize_t n = read_n(conn->fd, conn->buffer, attr_size);
       
       if (n < 0) {
-        perror("try_read_n");
+        perror("read_n");
         close(conn->fd);
         return -1;
       }
@@ -88,7 +88,7 @@ int handle_client(connection_t *conn) {
           to_read = conn->expected_size - conn->total_read;
         }
 
-        ssize_t n = try_read_n(conn->fd, conn->buffer, to_read);
+        ssize_t n = read_n(conn->fd, conn->buffer, to_read);
         
         if (n < 0) {
           close(conn->fd);
