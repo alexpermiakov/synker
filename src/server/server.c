@@ -131,6 +131,8 @@ int handle_client(connection_t *conn) {
           conn->state = DELETING_FILE;
           printf("Updated state %d\n", conn->state);
         }
+      } else {
+        break;
       }
     } if (conn->state == READING_FILE_DATA) {
       while (conn->total_read < conn->expected_size) {
