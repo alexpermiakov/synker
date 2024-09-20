@@ -15,7 +15,7 @@ typedef struct {
   connection_state_t state;   // current state of the connection
   char buffer[BUFSIZ];        // buffer for reading/writing data
   size_t buffer_size;         // size of the buffer
-  size_t total_read;          // total bytes read so far
+  size_t current_read;          // total bytes read so far
   size_t total_written;       // total bytes written so far
   size_t expected_size;       // expected total size of the data to be read
   file_attrs_t file_attrs;    // file attributes
