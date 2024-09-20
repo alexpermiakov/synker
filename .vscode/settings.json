@@ -30,6 +30,7 @@
     "sstream": "c",
     "streambuf": "c",
     "tuple": "c",
-    "delete_file.h": "c"
+    "delete_file.h": "c",
+    "string_utils.h": "c"
   }
 }

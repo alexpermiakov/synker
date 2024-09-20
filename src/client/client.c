@@ -59,6 +59,11 @@ void *client(void *args) {
       exit(1);
     }
 
+    struct inotify_event event_dirs[num_events]; 
+    struct inotify_event event_files[num_events];
+    size_t num_dirs = 0;
+    size_t num_files = 0; 
+
     for (int i = 0; i < num_events; i++) {
       if (events[i].data.fd == inotify_fd) {
         char buf[BUFSIZ];
@@ -68,20 +73,44 @@ void *client(void *args) {
         while (p < buf + len) {
           struct inotify_event *event = (struct inotify_event *) p;
 
-          if (event->mask & IN_CREATE) {
-            create_handler(client_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);            
+          if (event->mask & IN_ISDIR) {
+            event_dirs[num_dirs] = *event;
+            num_dirs++;
+          } else {
+            // event_files[num_files] = *event;
+            // num_files++;
           }
 
-          if (event->mask & IN_MODIFY) {
-            modify_handler(client_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
-          }
-
-          if (event->mask & IN_DELETE || event->mask & IN_DELETE_SELF) {
-            delete_handler(client_fd, event, watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
-          }
-          
           p += sizeof(struct inotify_event) + event->len;
         }
+      }
+    }
+
+    for (size_t i = 0; i < num_dirs; i++) {
+      if (event_dirs[i].mask & IN_CREATE) {
+        create_handler(client_fd, &event_dirs[i], watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
+      }
+
+      if (event_dirs[i].mask & IN_MODIFY) {
+        modify_handler(client_fd, &event_dirs[i], watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
+      }
+
+      if (event_dirs[i].mask & IN_DELETE || event_dirs[i].mask & IN_DELETE_SELF) {
+        delete_handler(client_fd, &event_dirs[i], watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
+      }
+    }
+
+    for (size_t i = 0; i < num_files; i++) {
+      if (event_files[i].mask & IN_CREATE) {
+        create_handler(client_fd, &event_files[i], watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
+      }
+
+      if (event_files[i].mask & IN_MODIFY) {
+        modify_handler(client_fd, &event_files[i], watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
+      }
+
+      if (event_files[i].mask & IN_DELETE || event_files[i].mask & IN_DELETE_SELF) {
+        delete_handler(client_fd, &event_files[i], watched_dir, dst_to_dir_path, &wd_to_path, &path_to_wd, inotify_fd);
       }
     }
   }

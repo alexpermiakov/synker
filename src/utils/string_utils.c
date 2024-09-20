@@ -11,7 +11,13 @@ char *get_postfix(char *full_path, char *prefix) {
 
 char *get_src_path(char *base_path, char *filename) {
   char *new_path = malloc(PATH_MAX);
-  
+
+
+  if (strlen(filename) == 0) {
+    sprintf(new_path, "%s", base_path);
+    return new_path;
+  }
+
   if (base_path == NULL) {
     sprintf(new_path, "%s", filename);
   } else { 

@@ -19,8 +19,6 @@ void create_handler(int client_fd, struct inotify_event *event, char *watched_di
   char *src_file_path = get_src_path(base_path, event->name);
   char *dst_file_path = get_dst_path(src_file_path, watched_dir, dst_to_dir_path);
 
-  printf("File %s was created\n", event->name);
-
   if (event->mask & IN_ISDIR) {
     copy_dir(client_fd, src_file_path, dst_file_path);
     inotify_add_watch_recursively(wd_to_path, path_to_wd, inotify_fd, src_file_path);
@@ -38,7 +36,7 @@ void modify_handler(int client_fd, struct inotify_event *event, char *watched_di
   char *src_file_path = get_src_path(base_path, event->name);
   char *dst_file_path = get_dst_path(src_file_path, watched_dir, dst_to_dir_path);
 
-  printf("File %s was changed\n", event->name);
+  printf("File %s was changed\n", src_file_path);
 
   if (event->mask & IN_ISDIR) {
     copy_dir(client_fd, src_file_path, dst_file_path);

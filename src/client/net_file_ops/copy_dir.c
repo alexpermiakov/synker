@@ -28,7 +28,7 @@ void copy_dir (int client_fd, char *src_file_path, char *dst_file_path) {
   file_attrs.operation = CREATE_DIR;
   serialize_file_attrs(&file_attrs, file_attr_buffer);
 
-  printf("Send directory attributes %s\n", file_attrs.file_path);
+  printf("Send directory attributes %s\n", dst_file_path);
   
   if (write(client_fd, file_attr_buffer, attr_size) < 0) {
     fprintf(stderr, "Failed to send file attributes\n");

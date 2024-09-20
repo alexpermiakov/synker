@@ -3,7 +3,7 @@
 
 #include <sys/epoll.h>
 
-#define MAX_EVENTS 100 // more than 1000 is good for high-performance monitoring
+#define MAX_EVENTS 1000
 
 int epoll_init();
 void epoll_add_fd(int epoll_fd, int inotify_fd);
