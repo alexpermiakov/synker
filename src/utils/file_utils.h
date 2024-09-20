@@ -26,5 +26,5 @@ int remove_dir(char *path);
 void extract_file_metadata(char *file_path, file_attrs_t *file_attrs);
 void serialize_file_attrs (file_attrs_t *file_attrs, char *buffer);
 void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer);
-
+bool is_dir_exists(char *path);
 #endif

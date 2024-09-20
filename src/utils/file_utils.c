@@ -93,3 +93,8 @@ void deserialize_file_attrs (file_attrs_t *file_attrs, char *buffer) {
   memcpy(&file_attrs->size, buffer + PATH_MAX + sizeof(uint32_t), sizeof(uint64_t));
   memcpy(&file_attrs->operation, buffer + PATH_MAX + sizeof(uint32_t) + sizeof(uint64_t), sizeof(uint8_t));
 }
+
+bool is_dir_exists(char *path) {
+  struct stat st;
+  return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+}

@@ -98,6 +98,10 @@ int handle_file_attr_state (connection_t *conn) {
   printf("Operation: %d\n", conn->file_attrs.operation);
 
   if (conn->file_attrs.operation == CREATE_DIR) {
+    if (is_dir_exists(conn->file_attrs.file_path)) {
+      return 0;
+    }
+
     if (mkdir(conn->file_attrs.file_path, conn->file_attrs.mode & 0777) < 0) {
       perror("mkdir");
       return -1;
