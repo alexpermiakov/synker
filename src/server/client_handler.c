@@ -95,7 +95,7 @@ int handle_file_attr_state (connection_t *conn) {
   conn->current_read = 0;
 
   printf("File path: %s\n", conn->file_attrs.file_path);
-  printf("Mode: %d\n", conn->file_attrs.operation);
+  printf("Operation: %d\n", conn->file_attrs.operation);
 
   if (conn->file_attrs.operation == CREATE_DIR) {
     if (mkdir(conn->file_attrs.file_path, conn->file_attrs.mode & 0777) < 0) {

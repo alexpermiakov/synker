@@ -12,11 +12,6 @@
 #include "delete_file.h"
 
 void copy_dir (int client_fd, char *src_file_path, char *dst_file_path) {
-  if (!is_dir_exists(dst_file_path) && mkdir(dst_file_path, 0777) == -1) {
-    perror("mkdir");
-    exit(1);
-  }
-
   DIR *dir = opendir(src_file_path);
 
   if (dir == NULL) {
@@ -33,8 +28,9 @@ void copy_dir (int client_fd, char *src_file_path, char *dst_file_path) {
   file_attrs.operation = CREATE_DIR;
   serialize_file_attrs(&file_attrs, file_attr_buffer);
 
-  printf("Send directory attributes\n");
-  if (write_n(client_fd, file_attr_buffer, attr_size) < 0) {
+  printf("Send directory attributes %s\n", file_attrs.file_path);
+  
+  if (write(client_fd, file_attr_buffer, attr_size) < 0) {
     fprintf(stderr, "Failed to send file attributes\n");
     close(client_fd);
     exit(1);
