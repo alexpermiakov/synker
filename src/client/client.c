@@ -77,8 +77,8 @@ void *client(void *args) {
             event_dirs[num_dirs] = *event;
             num_dirs++;
           } else {
-            // event_files[num_files] = *event;
-            // num_files++;
+            event_files[num_files] = *event;
+            num_files++;
           }
 
           p += sizeof(struct inotify_event) + event->len;
