@@ -10,9 +10,6 @@
 
 int handle_client(connection_t *conn) {
   while (1) {
-    printf("Reading data from client\n");
-    printf("State: %d\n", conn->state);
-
     if (conn->state == READING_FILE_ATTRS) {
       size_t attr_size = sizeof(file_attrs_t);
       ssize_t n = read(conn->fd, conn->buffer + conn->total_read, attr_size - conn->total_read);
@@ -23,20 +20,11 @@ int handle_client(connection_t *conn) {
 
       conn->total_read += n;
 
-      printf("Read %zd bytes\n", n);
-      printf("attr_size: %zu bytes\n", attr_size);
-      printf("total_read: %zu bytes\n", conn->total_read);
-
       if (conn->total_read < attr_size) {
         break;
       }
 
       deserialize_file_attrs(&conn->file_attrs, conn->buffer);
-      
-      printf("Received file attributes\n");
-      printf("File path: %s\n", conn->file_attrs.file_path);
-      printf("File operation: %hhu\n", conn->file_attrs.operation);
-
       size_t excess_bytes = conn->total_read - attr_size;
 
       if (conn->file_attrs.operation == CREATE_DIR) {
@@ -53,8 +41,6 @@ int handle_client(connection_t *conn) {
         conn->expected_size = conn->file_attrs.size;
         conn->total_read = excess_bytes;
         conn->file_fd = open(conn->file_attrs.file_path, O_CREAT | O_WRONLY | O_TRUNC, conn->file_attrs.mode & 0777);
-        
-        printf("Updated state %d\n", conn->state);
 
         if (conn->file_fd < 0) {
           perror("open");
@@ -71,7 +57,6 @@ int handle_client(connection_t *conn) {
         }
       } else if (conn->file_attrs.operation == DELETE) {
         conn->state = DELETING_FILE;
-        printf("Updated state %d\n", conn->state);
       }
 
       if (excess_bytes == 0) {
