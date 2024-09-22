@@ -72,13 +72,14 @@ void *client(void *args) {
 
         while (p < buf + len) {
           struct inotify_event *event = (struct inotify_event *) p;
+          printf("Event: %s, is_dir %d\n", event->name, event->mask & IN_ISDIR);
 
           if (event->mask & IN_ISDIR) {
             event_dirs[num_dirs] = *event;
             num_dirs++;
           } else {
-            event_files[num_files] = *event;
-            num_files++;
+            // event_files[num_files] = *event;
+            // num_files++;
           }
 
           p += sizeof(struct inotify_event) + event->len;

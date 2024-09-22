@@ -10,14 +10,18 @@
 #include "copy_file.h"
 #include "delete_dir.h"
 #include "delete_file.h"
+#include "client/helpers/inotify.h"
+#include "data_structures/hash_table.h"
 
-void copy_dir (int client_fd, char *src_file_path, char *dst_file_path) {
+void copy_dir (int client_fd, char *src_file_path, char *dst_file_path, HashTable *wd_to_path, HashTable *path_to_wd, int inotify_fd) {
   DIR *dir = opendir(src_file_path);
 
   if (dir == NULL) {
     perror("opendir");
     exit(1);
   }
+
+  inotify_add_watch_recursively(wd_to_path, path_to_wd, inotify_fd, src_file_path);
 
   ssize_t attr_size = sizeof(file_attrs_t);
   char file_attr_buffer[attr_size];
@@ -50,7 +54,7 @@ void copy_dir (int client_fd, char *src_file_path, char *dst_file_path) {
     snprintf(sub_dst_file_path, sizeof(sub_dst_file_path), "%s/%s", dst_file_path, entry->d_name);
 
     if (entry->d_type == DT_DIR) {
-      copy_dir(client_fd, src_path, sub_dst_file_path);
+      copy_dir(client_fd, src_path, sub_dst_file_path, wd_to_path, path_to_wd, inotify_fd);
     } else {
       copy_file(client_fd, src_path, sub_dst_file_path);
     }
